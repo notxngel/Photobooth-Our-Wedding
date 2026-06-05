@@ -189,10 +189,6 @@
                         </button>
                     </div>
 
-                    <!-- Botón Retomar (Oculto inicialmente) -->
-                    <div class="retake-wrapper" style="display:none;" id="retake-container">
-                        <button id="retake" class="btn-pill-solid" aria-label="Tomar otra secuencia">Reiniciar Captura</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -217,9 +213,9 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <span>Guardar</span>
                 </button>
-                <button id="btn-email" class="btn-action" aria-label="Enviar por correo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span>Email</span>
+                <button id="btn-qr" class="btn-action" aria-label="Compartir por código QR">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="14.01"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="14" y1="21" x2="14" y2="21.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"/></svg>
+                    <span>Compartir</span>
                 </button>
             </div>
             
@@ -230,30 +226,28 @@
     </div>
 
     <!-- ════════════════════════════════════════ -->
-    <!-- MODAL EMAIL -->
+    <!-- MODAL QR -->
     <!-- ════════════════════════════════════════ -->
-    <div id="email-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+    <div id="qr-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
         <div class="modal-card">
-            <button id="btn-close-modal" class="btn-icon-blur modal-close" aria-label="Cerrar">
+            <button id="btn-close-qr" class="btn-icon-blur modal-close" aria-label="Cerrar">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
-            
+
             <div class="modal-header">
-                <h3>Recibe tu recuerdo</h3>
-                <p>Enviaremos la fotografía en alta resolución a tu correo.</p>
+                <h3>Llévate tu recuerdo</h3>
+                <p>Escanea este código con la cámara de tu móvil para descargar tu fotografía en alta calidad.</p>
             </div>
-            
+
             <div class="modal-body">
-                <input type="email" id="email-input" class="input-line" placeholder="ejemplo@correo.com" required>
-                <div id="email-status" class="status-msg"></div>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="btn-send-email" class="btn btn-primary btn-full">Enviar Fotografía</button>
+                <div id="qr-box" class="qr-box"></div>
+                <div id="qr-status" class="status-msg"></div>
             </div>
         </div>
     </div>
 
+    <!-- Generador de QR (cliente). Se carga una vez al inicio. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

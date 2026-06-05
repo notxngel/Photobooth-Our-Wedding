@@ -799,6 +799,29 @@ ul, ol {
 .status-msg.success { color: var(--color-accent); letter-spacing: 0.05em; }
 .status-msg.error { color: #d9534f; }
 
+/* Caja del código QR */
+.qr-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 240px;
+    height: 240px;
+    margin: 0 auto var(--spacing-md);
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.qr-box img,
+.qr-box canvas {
+    display: block;
+    width: 216px !important;
+    height: 216px !important;
+}
+
+.modal-body { text-align: center; }
+
 /* ==========================================================================
    TOAST NOTIFICATIONS
    ========================================================================== */
