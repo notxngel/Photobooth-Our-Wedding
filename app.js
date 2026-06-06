@@ -54,6 +54,58 @@ const grabCanvas = document.createElement('canvas');
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
 /* ==========================================================================
+   ROBUSTEZ PARA EL EVENTO (5 horas)
+   ========================================================================== */
+// --- Wake Lock: evita que el iPad atenúe o duerma la pantalla ---
+let wakeLock = null;
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (e) {
+        console.warn('Wake Lock no disponible:', e);
+    }
+}
+
+// --- Reinicio por inactividad: vuelve a la portada para el siguiente invitado ---
+const IDLE_RESET_MS = 90000;
+let idleTimer = null;
+function armIdleReset() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        if (!screens.result || !screens.result.classList.contains('active')) return;
+        const modal = document.getElementById('qr-modal');
+        if (modal) modal.style.display = 'none';
+        state.photoDataUrl = null;
+        state.photoBlob = null;
+        state.shareUrl = null;
+        navigateTo('landing');
+    }, IDLE_RESET_MS);
+}
+function clearIdleReset() {
+    clearTimeout(idleTimer);
+}
+
+// Al volver a primer plano: recupera Wake Lock y la cámara si se cortó.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    requestWakeLock();
+    if (screens.booth && screens.booth.classList.contains('active')) {
+        if (!state.stream || !state.stream.active) {
+            startCamera();
+        }
+    }
+});
+
+// Cualquier toque en la pantalla de resultado reinicia el contador de inactividad.
+document.addEventListener('pointerdown', () => {
+    if (screens.result && screens.result.classList.contains('active')) {
+        armIdleReset();
+    }
+});
+
+/* ==========================================================================
    DEFINICIÓN DE FILTROS
    --------------------------------------------------------------------------
    `css`   -> filtro para la previsualización en vivo (GPU, fluido).
@@ -246,6 +298,13 @@ function navigateTo(screenId) {
             stopCamera();
         }
     }
+
+    // Reinicio por inactividad: solo activo en la pantalla de resultado.
+    if (screenId === 'result') {
+        armIdleReset();
+    } else {
+        clearIdleReset();
+    }
 }
 
 // Global Nav Bindings
@@ -310,11 +369,20 @@ async function startCamera() {
         if (video) {
             video.srcObject = state.stream;
         }
+        // Mantener la pantalla encendida mientras la cámara está activa.
+        requestWakeLock();
         // Diagnóstico: resolución real obtenida (útil al probar en el iPad).
         const track = state.stream.getVideoTracks()[0];
         if (track) {
             const s = track.getSettings();
             console.info(`📷 Resolución de captura real: ${s.width}×${s.height}`);
+            // Auto-recuperación: si la pista muere, reabrimos la cámara.
+            track.addEventListener('ended', () => {
+                if (screens.booth && screens.booth.classList.contains('active')) {
+                    console.warn('Pista de cámara finalizada; reintentando…');
+                    startCamera();
+                }
+            });
         }
     } catch (err) {
         showToast('No se pudo acceder a la cámara. Revisa los permisos.', 'error');
@@ -544,16 +612,27 @@ captureBtn?.addEventListener('click', async () => {
    SUBIDA A LA NUBE
    ========================================================================== */
 async function uploadToCloud(blob) {
-    const fd = new FormData();
-    fd.append('file', blob);
-    fd.append('upload_preset', CLOUDINARY.uploadPreset);
-    const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,
-        { method: 'POST', body: fd }
-    );
-    if (!res.ok) throw new Error(`Cloudinary ${res.status}`);
-    const json = await res.json();
-    return json.secure_url;
+    const maxTries = 3;
+    let lastErr;
+    for (let attempt = 1; attempt <= maxTries; attempt++) {
+        try {
+            const fd = new FormData();
+            fd.append('file', blob);
+            fd.append('upload_preset', CLOUDINARY.uploadPreset);
+            const res = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,
+                { method: 'POST', body: fd }
+            );
+            if (!res.ok) throw new Error(`Cloudinary ${res.status}`);
+            const json = await res.json();
+            return json.secure_url;
+        } catch (e) {
+            lastErr = e;
+            console.warn(`Subida fallida (intento ${attempt}/${maxTries}):`, e);
+            if (attempt < maxTries) await wait(attempt * 1500); // espera progresiva
+        }
+    }
+    throw lastErr;
 }
 
 async function startUpload(blob) {
@@ -664,5 +743,6 @@ function renderQR() {
    ========================================================================== */
 window.addEventListener('DOMContentLoaded', () => {
     updateVideoFilter();
+    requestWakeLock();
     navigateTo('landing');
 });
