@@ -2,27 +2,27 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
     <meta name="description" content="Photo Booth premium para la boda de Angel & Clara — 16 de Julio, 2026">
     <meta name="theme-color" content="#1A1510">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Angel & Clara — Photo Booth</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@200;300;400;500&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body role="application" aria-label="Photo Booth de Angel & Clara">
 
-    <!-- TOAST NOTIFICATIONS -->
+    <!-- TOAST -->
     <div id="toast-container" aria-live="polite" aria-relevant="additions"></div>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- LANDING PAGE -->
-    <!-- ════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════
+         LANDING
+    ══════════════════════════════════════════════ -->
     <div id="landing" class="screen active">
         <canvas id="particles-canvas" aria-hidden="true"></canvas>
         <div class="landing-container">
@@ -36,9 +36,7 @@
                         <line x1="126" y1="9" x2="200" y2="9" stroke="currentColor" stroke-width="0.5" opacity="0.55"/>
                     </svg>
                 </div>
-                <h1 class="landing-title">
-                    Angel <span class="landing-ampersand">&amp;</span> Clara
-                </h1>
+                <h1 class="landing-title">Angel <span class="landing-ampersand">&amp;</span> Clara</h1>
                 <p class="landing-date">16 · 07 · 26</p>
                 <div class="landing-ornament-sm" aria-hidden="true">
                     <svg viewBox="0 0 90 10" xmlns="http://www.w3.org/2000/svg">
@@ -58,67 +56,76 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- MENU DE MODOS -->
-    <!-- ════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════
+         MENÚ DE MODOS
+    ══════════════════════════════════════════════ -->
     <div id="menu" class="screen" role="main">
         <div class="screen-container">
             <header class="screen-header">
                 <button id="btn-back-menu" class="btn-icon" aria-label="Volver">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
                 <h2>Sesión</h2>
-                <div class="header-placeholder" style="width:24px;"></div>
+                <div style="width:48px;"></div>
             </header>
 
             <div class="modes-grid" role="radiogroup" aria-label="Tipo de fotografía">
-                <!-- INDIVIDUAL -->
-                <div class="mode-card" data-mode="individual" role="radio" tabindex="0" aria-checked="false">
+
+                <!-- RETRATO — 1 foto -->
+                <div class="mode-card" data-mode="retrato" role="radio" tabindex="0" aria-checked="false">
                     <div class="mode-icon" aria-hidden="true">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="12" cy="10" r="3"/>
+                            <path d="M6 21v-1a6 6 0 0 1 12 0v1"/>
                         </svg>
                     </div>
                     <div class="mode-card-text">
                         <h3>Retrato</h3>
-                        <p>Secuencia de 4 fotos</p>
+                        <p>El instante perfecto</p>
                     </div>
+                    <div class="mode-card-badge">×1</div>
                 </div>
 
-                <!-- COUPLE -->
-                <div class="mode-card" data-mode="couple" role="radio" tabindex="0" aria-checked="false">
+                <!-- DÍPTICO — 2 fotos lado a lado -->
+                <div class="mode-card" data-mode="pareja" role="radio" tabindex="0" aria-checked="false">
                     <div class="mode-icon" aria-hidden="true">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="4" width="9" height="16" rx="1.5"/>
+                            <rect x="13" y="4" width="9" height="16" rx="1.5"/>
                         </svg>
                     </div>
                     <div class="mode-card-text">
-                        <h3>Pareja</h3>
-                        <p>Captura compartida</p>
+                        <h3>Díptico</h3>
+                        <p>Dos fotos, un recuerdo</p>
                     </div>
+                    <div class="mode-card-badge">×2</div>
                 </div>
 
-                <!-- GROUP -->
-                <div class="mode-card" data-mode="group" role="radio" tabindex="0" aria-checked="false">
+                <!-- ROLLO — 4 fotos en tira -->
+                <div class="mode-card" data-mode="rollo" role="radio" tabindex="0" aria-checked="false">
                     <div class="mode-icon" aria-hidden="true">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="10" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            <path d="M6 3.13a4 4 0 0 0 0 7.75"></path>
-                            <path d="M2 21v-2a4 4 0 0 1 3-3.87"></path>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2"  width="16" height="4.5" rx="1"/>
+                            <rect x="4" y="9.75" width="16" height="4.5" rx="1"/>
+                            <rect x="4" y="17.5" width="16" height="4.5" rx="1"/>
+                            <line x1="1.5" y1="4.25"  x2="4"  y2="4.25"  stroke-width="1.5"/>
+                            <line x1="20" y1="4.25"  x2="22.5" y2="4.25"  stroke-width="1.5"/>
+                            <line x1="1.5" y1="12"    x2="4"  y2="12"    stroke-width="1.5"/>
+                            <line x1="20" y1="12"    x2="22.5" y2="12"    stroke-width="1.5"/>
+                            <line x1="1.5" y1="19.75" x2="4"  y2="19.75" stroke-width="1.5"/>
+                            <line x1="20" y1="19.75" x2="22.5" y2="19.75" stroke-width="1.5"/>
                         </svg>
                     </div>
                     <div class="mode-card-text">
-                        <h3>Grupo</h3>
-                        <p>Para todos los invitados</p>
+                        <h3>Rollo</h3>
+                        <p>Tira clásica de cuatro</p>
                     </div>
+                    <div class="mode-card-badge">×4</div>
                 </div>
+
             </div>
 
             <div class="action-footer">
@@ -129,127 +136,133 @@
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- PHOTOBOOTH (CÁMARA EN VIVO + CONTROLES) -->
-    <!-- ════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════
+         PHOTOBOOTH — CÁMARA FULL-SCREEN
+    ══════════════════════════════════════════════ -->
     <div id="booth" class="screen" role="main">
-        <!-- Contenedor Principal que ocupa toda la pantalla -->
         <div class="booth-container">
-            
-            <!-- Vista de Cámara (Fondo) -->
+
+            <!-- Vista de cámara (fondo completo) -->
             <div class="camera-view">
                 <video id="player" autoplay playsinline muted aria-label="Cámara en vivo"></video>
                 <canvas id="snapshot" style="display:none"></canvas>
                 <div id="countdown" class="countdown" aria-live="assertive"></div>
                 <div id="flash" class="flash"></div>
-                <div id="photo-counter" class="photo-counter" style="display:none"></div>
+                <div id="photo-counter" class="photo-counter"></div>
             </div>
 
-            <!-- Interfaz Superpuesta (Overlays) -->
-            <div class="booth-ui">
-                <!-- Top Bar -->
-                <div class="booth-top-bar">
-                    <button id="btn-back-booth" class="btn-icon-blur" aria-label="Volver">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                    <div class="current-mode-badge" id="current-mode-display">Retrato</div>
-                </div>
-
-                <!-- Paneles de Configuración Laterales / Inferiores -->
-                <div class="booth-controls-panel">
-                    
-                    <!-- Filtros -->
-                    <div class="config-section">
-                        <h4 class="config-title">Filtros</h4>
-                        <div class="options-scroll" role="group">
-                            <button class="pill-btn active" data-filter="color" aria-pressed="true">Color</button>
-                            <button class="pill-btn" data-filter="bw" aria-pressed="false">B/N</button>
-                            <button class="pill-btn" data-filter="sepia" aria-pressed="false">Sepia</button>
-                            <button class="pill-btn" data-filter="vintage" aria-pressed="false">Vintage</button>
-                            <button class="pill-btn" data-filter="warm" aria-pressed="false">Warm</button>
-                            <button class="pill-btn" data-filter="cool" aria-pressed="false">Cool</button>
-                        </div>
-                    </div>
-
-                    <!-- Marcos -->
-                    <div class="config-section">
-                        <h4 class="config-title">Marco</h4>
-                        <div class="options-scroll" role="group">
-                            <button class="pill-btn active" data-frame="classic" aria-pressed="true">Clásico</button>
-                            <button class="pill-btn" data-frame="elegant" aria-pressed="false">Elegante</button>
-                            <button class="pill-btn" data-frame="minimal" aria-pressed="false">Editorial</button>
-                            <button class="pill-btn" data-frame="none" aria-pressed="false">Sin Marco</button>
-                        </div>
-                    </div>
-
-                    <!-- Botón Obturador Principal -->
-                    <div class="shutter-wrapper">
-                        <button id="capture" class="btn-shutter" aria-label="Capturar fotografía">
-                            <div class="shutter-inner"></div>
-                        </button>
-                    </div>
-
-                    <!-- Botón Retomar (Oculto inicialmente) -->
-                    <div class="retake-wrapper" style="display:none;" id="retake-container">
-                        <button id="retake" class="btn-pill-solid" aria-label="Tomar otra secuencia">Reiniciar Captura</button>
-                    </div>
-                </div>
+            <!-- Barra superior flotante -->
+            <div class="booth-top-bar">
+                <button id="btn-back-booth" class="btn-icon-blur" aria-label="Volver">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="current-mode-badge" id="current-mode-display">Retrato</div>
+                <button id="btn-settings" class="btn-icon-blur" aria-label="Ajustes de cámara">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
             </div>
+
+            <!-- Obturador inferior flotante -->
+            <div class="booth-bottom-bar">
+                <button id="capture" class="btn-shutter" aria-label="Capturar fotografía">
+                    <div class="shutter-inner"></div>
+                </button>
+            </div>
+
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- RESULTADO -->
-    <!-- ════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════
+         RESULTADO
+    ══════════════════════════════════════════════ -->
     <div id="result" class="screen" role="main">
         <div class="screen-container result-layout">
             <header class="screen-header result-header">
                 <h2>El Resultado</h2>
                 <p class="subtitle">Tu momento ha sido capturado</p>
             </header>
-            
+
             <div class="result-preview-wrapper">
                 <img id="result-image" src="" alt="Fotografía final">
             </div>
-            
-            <div class="result-actions-grid">
-                <button id="btn-download" class="btn-action" aria-label="Guardar fotografía">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span>Guardar</span>
-                </button>
-                <button id="btn-email" class="btn-action" aria-label="Enviar por correo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <span>Email</span>
-                </button>
-            </div>
-            
-            <button id="btn-retake-result" class="btn btn-outline btn-full mt-4" aria-label="Finalizar y tomar nueva foto">
+
+            <button id="btn-save-send" class="btn btn-primary btn-full" aria-label="Guardar y enviar fotografía">
+                Guardar &amp; Enviar
+            </button>
+
+            <button id="btn-retake-result" class="btn btn-outline btn-full mt-4" aria-label="Nueva sesión">
                 Nueva Sesión
             </button>
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════ -->
-    <!-- MODAL EMAIL -->
-    <!-- ════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════
+         PANEL DE AJUSTES (bottom sheet)
+    ══════════════════════════════════════════════ -->
+    <div id="settings-sheet" class="settings-sheet" style="display:none" role="dialog" aria-modal="true" aria-label="Ajustes de cámara">
+        <div class="settings-backdrop" id="settings-backdrop"></div>
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <span class="settings-card-title">Ajustes</span>
+                <button id="btn-close-settings" class="btn-icon" aria-label="Cerrar ajustes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="config-section">
+                <h4 class="config-title">Filtros</h4>
+                <div class="options-scroll" role="group">
+                    <button class="pill-btn active" data-filter="color" aria-pressed="true">Color</button>
+                    <button class="pill-btn" data-filter="bw" aria-pressed="false">B/N</button>
+                    <button class="pill-btn" data-filter="sepia" aria-pressed="false">Sepia</button>
+                    <button class="pill-btn" data-filter="vintage" aria-pressed="false">Vintage</button>
+                    <button class="pill-btn" data-filter="warm" aria-pressed="false">Warm</button>
+                    <button class="pill-btn" data-filter="cool" aria-pressed="false">Cool</button>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4 class="config-title">Marco</h4>
+                <div class="options-scroll" role="group">
+                    <button class="pill-btn active" data-frame="classic" aria-pressed="true">Clásico</button>
+                    <button class="pill-btn" data-frame="elegant" aria-pressed="false">Elegante</button>
+                    <button class="pill-btn" data-frame="minimal" aria-pressed="false">Editorial</button>
+                    <button class="pill-btn" data-frame="none" aria-pressed="false">Sin Marco</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         MODAL — GUARDAR & ENVIAR
+    ══════════════════════════════════════════════ -->
     <div id="email-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
         <div class="modal-card">
-            <button id="btn-close-modal" class="btn-icon-blur modal-close" aria-label="Cerrar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <button id="btn-close-modal" class="btn-icon modal-close-btn" aria-label="Cerrar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </button>
-            
+
             <div class="modal-header">
-                <h3>Recibe tu recuerdo</h3>
-                <p>Enviaremos la fotografía en alta resolución a tu correo.</p>
+                <h3>Guardar &amp; Enviar</h3>
+                <p>La foto se descargará en tu dispositivo y te la enviaremos por correo.</p>
             </div>
-            
+
             <div class="modal-body">
-                <input type="email" id="email-input" class="input-line" placeholder="ejemplo@correo.com" required>
+                <input type="email" id="email-input" class="input-line" placeholder="tu@correo.com" autocomplete="email" required>
                 <div id="email-status" class="status-msg"></div>
             </div>
-            
+
             <div class="modal-footer">
-                <button id="btn-send-email" class="btn btn-primary btn-full">Enviar Fotografía</button>
+                <button id="btn-send-email" class="btn btn-primary btn-full">Guardar y Enviar</button>
             </div>
         </div>
     </div>

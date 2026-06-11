@@ -1,26 +1,53 @@
 /**
- * app.js
- * Logic for Angel & Clara's Photo Booth
+ * app.js — Angel & Clara Photo Booth
  */
 
+/* ==========================================================================
+   ESTADO GLOBAL
+   ========================================================================== */
 const state = {
     mode: null,
     filter: 'color',
     frame: 'classic',
     stream: null,
     photoDataUrl: null,
+    capturedFrames: [],
     isCapturing: false
 };
 
+const PHOTO_COUNTS = { retrato: 1, pareja: 2, rollo: 4 };
+const MODE_LABELS  = { retrato: 'Retrato', pareja: 'Díptico', rollo: 'Rollo' };
+
 const screens = {
     landing: document.getElementById('landing'),
-    menu: document.getElementById('menu'),
-    booth: document.getElementById('booth'),
-    result: document.getElementById('result')
+    menu:    document.getElementById('menu'),
+    booth:   document.getElementById('booth'),
+    result:  document.getElementById('result')
 };
 
 /* ==========================================================================
-   PARTICLES SYSTEM (Landing Screen)
+   UTILIDADES
+   ========================================================================== */
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add('visible'));
+    });
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 400);
+    }, 3200);
+}
+
+/* ==========================================================================
+   PARTÍCULAS (Landing)
    ========================================================================== */
 const canvasParticles = document.getElementById('particles-canvas');
 let particlesAnimationId = null;
@@ -29,27 +56,23 @@ function initParticles() {
     if (!canvasParticles) return;
     const ctx = canvasParticles.getContext('2d');
     let width, height;
-    let particles = [];
+    const particles = [];
 
     function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvasParticles.width = width;
-        canvasParticles.height = height;
+        width = canvasParticles.width = window.innerWidth;
+        height = canvasParticles.height = window.innerHeight;
     }
-    
     window.addEventListener('resize', resize);
     resize();
 
-    // Create particles
     for (let i = 0; i < 40; i++) {
         particles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            radius: Math.random() * 1.5 + 0.5,
+            r: Math.random() * 1.5 + 0.4,
             vx: (Math.random() - 0.5) * 0.4,
             vy: (Math.random() - 0.5) * 0.4,
-            alpha: Math.random() * 0.6 + 0.2
+            a: Math.random() * 0.6 + 0.2
         });
     }
 
@@ -58,12 +81,11 @@ function initParticles() {
         particles.forEach(p => {
             p.x += p.vx;
             p.y += p.vy;
-            if (p.x < 0 || p.x > width) p.vx = -p.vx;
-            if (p.y < 0 || p.y > height) p.vy = -p.vy;
-            
+            if (p.x < 0 || p.x > width)  p.vx *= -1;
+            if (p.y < 0 || p.y > height) p.vy *= -1;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${p.a})`;
             ctx.fill();
         });
         particlesAnimationId = requestAnimationFrame(draw);
@@ -79,386 +101,415 @@ function stopParticles() {
 }
 
 /* ==========================================================================
-   TOAST NOTIFICATION SYSTEM
-   ========================================================================== */
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    // Default container styling if not present in CSS
-    container.style.position = 'fixed';
-    container.style.top = '20px';
-    container.style.left = '50%';
-    container.style.transform = 'translateX(-50%)';
-    container.style.zIndex = '9999';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.pointerEvents = 'none';
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    
-    // Basic inline styling to ensure it's robust and visible
-    toast.style.margin = '8px 0';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '30px';
-    toast.style.fontFamily = "'Outfit', sans-serif";
-    toast.style.fontSize = '14px';
-    toast.style.color = '#fff';
-    toast.style.background = type === 'error' ? 'rgba(220, 53, 69, 0.9)' : 
-                             type === 'warning' ? 'rgba(255, 193, 7, 0.9)' : 
-                             type === 'success' ? 'rgba(40, 167, 69, 0.9)' : 'rgba(30, 30, 30, 0.9)';
-    toast.style.backdropFilter = 'blur(10px)';
-    toast.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-20px)';
-    toast.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-    
-    container.appendChild(toast);
-    
-    // Animate in
-    requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateY(0)';
-    });
-
-    // Remove after timeout
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-20px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-/* ==========================================================================
-   NAVIGATION FLOW
+   NAVEGACIÓN
    ========================================================================== */
 function navigateTo(screenId) {
-    Object.values(screens).forEach(screen => {
-        if(screen) screen.classList.remove('active');
-    });
-    if (screens[screenId]) {
-        screens[screenId].classList.add('active');
-    }
+    Object.values(screens).forEach(s => s?.classList.remove('active'));
+    screens[screenId]?.classList.add('active');
 
-    // Handle specific screen enter logic
-    if (screenId === 'landing') {
-        initParticles();
-    } else {
-        stopParticles();
-    }
+    if (screenId === 'landing') initParticles();
+    else stopParticles();
+
+    // Cerrar settings si salimos de booth
+    if (screenId !== 'booth') closeSettingsImmediate();
 
     if (screenId === 'booth') {
         startCamera();
-        const modeDisplay = document.getElementById('current-mode-display');
-        if (modeDisplay) {
-            modeDisplay.textContent = 
-                state.mode === 'individual' ? 'Retrato' : 
-                state.mode === 'couple' ? 'Pareja' : 'Grupo';
-        }
-    } else {
-        if (state.stream) {
-            stopCamera();
-        }
+        const badge = document.getElementById('current-mode-display');
+        if (badge) badge.textContent = MODE_LABELS[state.mode] || '';
+    } else if (state.stream) {
+        stopCamera();
     }
 }
 
-// Global Nav Bindings
 document.getElementById('btn-start')?.addEventListener('click', () => navigateTo('menu'));
 document.getElementById('btn-back-menu')?.addEventListener('click', () => navigateTo('landing'));
 document.getElementById('btn-back-booth')?.addEventListener('click', () => navigateTo('menu'));
 
 /* ==========================================================================
-   MENU SCREEN
+   MENÚ — SELECCIÓN DE MODO
    ========================================================================== */
-const modeCards = document.querySelectorAll('.mode-card');
-modeCards.forEach(card => {
-    card.addEventListener('click', () => {
-        modeCards.forEach(c => {
+document.querySelectorAll('.mode-card').forEach(card => {
+    function select() {
+        document.querySelectorAll('.mode-card').forEach(c => {
             c.setAttribute('aria-checked', 'false');
             c.classList.remove('selected');
-            c.style.borderColor = '';
         });
-
         card.setAttribute('aria-checked', 'true');
         card.classList.add('selected');
         state.mode = card.dataset.mode;
+    }
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
     });
 });
 
 document.getElementById('btn-start-camera')?.addEventListener('click', () => {
     if (!state.mode) {
-        showToast('Por favor, selecciona el tipo de fotografía primero.', 'warning');
+        showToast('Selecciona el tipo de sesión primero.', 'warning');
         return;
     }
     navigateTo('booth');
 });
 
 /* ==========================================================================
-   BOOTH (CAMERA & FILTERS)
+   CÁMARA
    ========================================================================== */
 const video = document.getElementById('player');
-const flashEl = document.getElementById('flash');
-const countdownEl = document.getElementById('countdown');
-const photoCounterEl = document.getElementById('photo-counter');
 
 async function startCamera() {
     try {
-        state.stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } }, 
-            audio: false 
+        state.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false
         });
-        if (video) {
-            video.srcObject = state.stream;
-        }
+        if (video) video.srcObject = state.stream;
     } catch (err) {
         showToast('No se pudo acceder a la cámara. Revisa los permisos.', 'error');
-        console.error('Camera Access Error:', err);
+        console.error('Camera error:', err);
     }
 }
 
 function stopCamera() {
-    if (state.stream) {
-        state.stream.getTracks().forEach(track => track.stop());
-        state.stream = null;
-    }
+    state.stream?.getTracks().forEach(t => t.stop());
+    state.stream = null;
     if (video) video.srcObject = null;
 }
 
-function updateVideoFilter() {
+function applyVideoFilter() {
     if (!video) return;
-    let cssFilter = '';
-    switch(state.filter) {
-        case 'bw': cssFilter = 'grayscale(100%)'; break;
-        case 'sepia': cssFilter = 'sepia(100%)'; break;
-        case 'vintage': cssFilter = 'sepia(50%) contrast(120%) saturate(120%)'; break;
-        case 'warm': cssFilter = 'sepia(30%) hue-rotate(-30deg) saturate(150%)'; break;
-        case 'cool': cssFilter = 'hue-rotate(180deg) saturate(120%)'; break;
-        default: cssFilter = 'none'; break;
-    }
-    video.style.filter = cssFilter;
+    const map = {
+        bw:      'grayscale(100%)',
+        sepia:   'sepia(100%)',
+        vintage: 'sepia(50%) contrast(120%) saturate(120%)',
+        warm:    'sepia(30%) hue-rotate(-30deg) saturate(150%)',
+        cool:    'hue-rotate(180deg) saturate(120%)'
+    };
+    video.style.filter = map[state.filter] || 'none';
 }
 
-// Filter and Frame Listeners
-document.querySelectorAll('.options-scroll .pill-btn').forEach(btn => {
+/* ==========================================================================
+   PANEL DE AJUSTES (bottom sheet)
+   ========================================================================== */
+const settingsSheet = document.getElementById('settings-sheet');
+
+function openSettings() {
+    if (!settingsSheet) return;
+    settingsSheet.style.display = 'flex';
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => settingsSheet.classList.add('open'));
+    });
+}
+
+function closeSettings() {
+    if (!settingsSheet) return;
+    settingsSheet.classList.remove('open');
+    setTimeout(() => { settingsSheet.style.display = 'none'; }, 360);
+}
+
+function closeSettingsImmediate() {
+    if (!settingsSheet) return;
+    settingsSheet.classList.remove('open');
+    settingsSheet.style.display = 'none';
+}
+
+document.getElementById('btn-settings')?.addEventListener('click', openSettings);
+document.getElementById('btn-close-settings')?.addEventListener('click', closeSettings);
+document.getElementById('settings-backdrop')?.addEventListener('click', closeSettings);
+
+// Filtros
+document.querySelectorAll('[data-filter]').forEach(btn => {
     btn.addEventListener('click', () => {
-        const filter = btn.dataset.filter;
-        const frame = btn.dataset.frame;
-        
-        if (filter) {
-            document.querySelectorAll('[data-filter]').forEach(b => {
-                b.classList.remove('active');
-                b.setAttribute('aria-pressed', 'false');
-            });
-            btn.classList.add('active');
-            btn.setAttribute('aria-pressed', 'true');
-            state.filter = filter;
-            updateVideoFilter();
-        }
-        
-        if (frame) {
-            document.querySelectorAll('[data-frame]').forEach(b => {
-                b.classList.remove('active');
-                b.setAttribute('aria-pressed', 'false');
-            });
-            btn.classList.add('active');
-            btn.setAttribute('aria-pressed', 'true');
-            state.frame = frame;
-        }
+        document.querySelectorAll('[data-filter]').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        state.filter = btn.dataset.filter;
+        applyVideoFilter();
+    });
+});
+
+// Marcos
+document.querySelectorAll('[data-frame]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-frame]').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        state.frame = btn.dataset.frame;
     });
 });
 
 /* ==========================================================================
-   CAPTURE SEQUENCE
+   HELPERS DE CAPTURA
+   ========================================================================== */
+const countdownEl    = document.getElementById('countdown');
+const flashEl        = document.getElementById('flash');
+const photoCounterEl = document.getElementById('photo-counter');
+
+async function showCountdown() {
+    if (!countdownEl) return;
+    for (let c = 3; c > 0; c--) {
+        countdownEl.textContent = c;
+        countdownEl.classList.add('active');
+        await delay(800);
+        countdownEl.classList.remove('active');
+        await delay(200);
+    }
+    countdownEl.textContent = '';
+}
+
+function triggerFlash() {
+    if (!flashEl) return;
+    flashEl.classList.add('active');
+    setTimeout(() => {
+        flashEl.classList.remove('active');
+        flashEl.classList.add('fade-out');
+        setTimeout(() => flashEl.classList.remove('fade-out'), 500);
+    }, 80);
+}
+
+function setPhotoCounter(current, total) {
+    if (!photoCounterEl) return;
+    if (total <= 1) { photoCounterEl.classList.remove('visible'); return; }
+    photoCounterEl.textContent = `${current} / ${total}`;
+    photoCounterEl.classList.add('visible');
+}
+
+// Captura un frame del video y lo dibuja en el canvas oculto.
+// Aplica el espejo horizontal para que coincida con lo que el usuario ve.
+function captureFrame(applyFrameBorder = false) {
+    const canvas = document.getElementById('snapshot');
+    if (!canvas || !video || !video.videoWidth) return null;
+
+    const w = video.videoWidth;
+    const h = video.videoHeight;
+    canvas.width  = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d');
+
+    // Volteo horizontal — el video tiene scaleX(-1) en CSS, así que reproducimos eso
+    ctx.save();
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1);
+    ctx.filter = video.style.filter || 'none';
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+    ctx.filter = 'none';
+
+    // Marco opcional (solo Retrato)
+    if (applyFrameBorder && state.frame !== 'none') {
+        const frameDefs = {
+            classic: { lw: Math.round(w * 0.026), color: '#ffffff' },
+            elegant: { lw: Math.round(w * 0.011), color: '#E5D3B3' },
+            minimal: { lw: Math.round(w * 0.005), color: '#000000' }
+        };
+        const f = frameDefs[state.frame];
+        if (f) {
+            ctx.lineWidth   = f.lw;
+            ctx.strokeStyle = f.color;
+            ctx.strokeRect(f.lw / 2, f.lw / 2, w - f.lw, h - f.lw);
+        }
+    }
+
+    return canvas.toDataURL('image/png', 0.92);
+}
+
+/* ==========================================================================
+   COMPOSICIÓN — ROLLO (tira de 4 fotos)
+   ========================================================================== */
+async function composeRollo(frames) {
+    const PW = 720, PH = 405;       // tamaño de cada foto dentro de la tira
+    const PAD = 28, GAP = 10;
+    const FOOTER = 90;
+    const cw = PW + PAD * 2;
+    const ch = PH * 4 + GAP * 3 + PAD * 2 + FOOTER;
+
+    const c = document.createElement('canvas');
+    c.width  = cw;
+    c.height = ch;
+    const ctx = c.getContext('2d');
+
+    // Fondo oscuro de la tira
+    ctx.fillStyle = '#0D0B08';
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Perforaciones decorativas de celuloide
+    ctx.fillStyle = '#1A1510';
+    const hs = 9, hg = 20;
+    for (let y = PAD; y < ch - FOOTER - PAD; y += hg) {
+        ctx.fillRect(5,       y, hs, hs - 2);
+        ctx.fillRect(cw - 5 - hs, y, hs, hs - 2);
+    }
+
+    // Fotos
+    for (let i = 0; i < frames.length; i++) {
+        const img = new Image();
+        const loaded = new Promise(r => { img.onload = r; img.onerror = r; });
+        img.src = frames[i];
+        await loaded;
+        const y = PAD + i * (PH + GAP);
+        ctx.drawImage(img, PAD, y, PW, PH);
+    }
+
+    // Texto al pie
+    const ty = ch - FOOTER / 2;
+    ctx.fillStyle = '#C9A96E';
+    ctx.font = '300 22px "Cormorant Garamond", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Angel & Clara', cw / 2, ty - 14);
+    ctx.fillStyle = 'rgba(245,230,211,0.4)';
+    ctx.font = '300 13px "Outfit", system-ui, sans-serif';
+    ctx.fillText('16 · 07 · 2026', cw / 2, ty + 14);
+
+    return c.toDataURL('image/png', 0.92);
+}
+
+/* ==========================================================================
+   COMPOSICIÓN — DÍPTICO (2 fotos lado a lado)
+   ========================================================================== */
+async function composeDiptych(frames) {
+    const PW = 700, PH = 393;
+    const PAD = 24, GAP = 14;
+    const FOOTER = 56;
+    const cw = PW * 2 + GAP + PAD * 2;
+    const ch = PH + PAD * 2 + FOOTER;
+
+    const c = document.createElement('canvas');
+    c.width  = cw;
+    c.height = ch;
+    const ctx = c.getContext('2d');
+
+    // Fondo crema (paspartú)
+    ctx.fillStyle = '#F5E6D3';
+    ctx.fillRect(0, 0, cw, ch);
+
+    for (let i = 0; i < frames.length; i++) {
+        const img = new Image();
+        const loaded = new Promise(r => { img.onload = r; img.onerror = r; });
+        img.src = frames[i];
+        await loaded;
+        ctx.drawImage(img, PAD + i * (PW + GAP), PAD, PW, PH);
+    }
+
+    // Texto al pie
+    ctx.fillStyle = 'rgba(80,60,40,0.55)';
+    ctx.font = '300 17px "Cormorant Garamond", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Angel & Clara · 16.07.2026', cw / 2, ch - 18);
+
+    return c.toDataURL('image/png', 0.92);
+}
+
+/* ==========================================================================
+   SECUENCIA DE CAPTURA
    ========================================================================== */
 const captureBtn = document.getElementById('capture');
 
 captureBtn?.addEventListener('click', async () => {
     if (state.isCapturing) return;
-    state.isCapturing = true;
+    state.isCapturing  = true;
+    state.capturedFrames = [];
+    captureBtn.disabled = true;
 
-    // UI disable
-    captureBtn.style.pointerEvents = 'none';
-    captureBtn.style.opacity = '0.5';
+    const total = PHOTO_COUNTS[state.mode] || 1;
 
-    // How many photos based on mode
-    let photosToTake = state.mode === 'individual' ? 4 : 1;
-    if (photoCounterEl && photosToTake > 1) {
-        photoCounterEl.style.display = 'block';
-    }
-    
-    // Optional basic countdown styling if missing in CSS
-    if (countdownEl) {
-        countdownEl.style.position = 'absolute';
-        countdownEl.style.top = '50%';
-        countdownEl.style.left = '50%';
-        countdownEl.style.transform = 'translate(-50%, -50%)';
-        countdownEl.style.fontSize = '8rem';
-        countdownEl.style.color = '#fff';
-        countdownEl.style.textShadow = '0 4px 20px rgba(0,0,0,0.5)';
-        countdownEl.style.fontWeight = '300';
+    for (let i = 1; i <= total; i++) {
+        setPhotoCounter(i, total);
+        await showCountdown();
+        triggerFlash();
+
+        // Solo aplicamos marco de usuario en modo Retrato
+        const frame = captureFrame(state.mode === 'retrato');
+        if (frame) state.capturedFrames.push(frame);
+
+        if (i < total) await delay(1400);
     }
 
-    // Optional flash styling if missing
-    if (flashEl) {
-        flashEl.style.position = 'absolute';
-        flashEl.style.inset = '0';
-        flashEl.style.backgroundColor = '#fff';
-        flashEl.style.opacity = '0';
-        flashEl.style.display = 'none';
-        flashEl.style.pointerEvents = 'none';
-        flashEl.style.transition = 'opacity 0.15s ease-out';
+    setPhotoCounter(0, 0);
+
+    // Componer imagen final según modo
+    if (state.mode === 'rollo' && state.capturedFrames.length === 4) {
+        state.photoDataUrl = await composeRollo(state.capturedFrames);
+    } else if (state.mode === 'pareja' && state.capturedFrames.length >= 2) {
+        state.photoDataUrl = await composeDiptych(state.capturedFrames);
+    } else {
+        state.photoDataUrl = state.capturedFrames[0] || null;
     }
 
-    for (let i = 1; i <= photosToTake; i++) {
-        if (photoCounterEl && photosToTake > 1) {
-            photoCounterEl.textContent = `Foto ${i} de ${photosToTake}`;
-        }
-        
-        // 3-second countdown
-        if (countdownEl) {
-            for (let c = 3; c > 0; c--) {
-                countdownEl.textContent = c;
-                countdownEl.style.display = 'block';
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            countdownEl.style.display = 'none';
-        }
+    state.isCapturing  = false;
+    captureBtn.disabled = false;
 
-        // Trigger Flash
-        if (flashEl) {
-            flashEl.style.display = 'block';
-            // Force reflow
-            void flashEl.offsetWidth; 
-            flashEl.style.opacity = '1';
-            
-            setTimeout(() => { flashEl.style.opacity = '0'; }, 100);
-            setTimeout(() => { flashEl.style.display = 'none'; }, 300);
-        }
-
-        // Draw snapshot
-        const canvas = document.getElementById('snapshot');
-        if (canvas && video) {
-            canvas.width = video.videoWidth || 1920;
-            canvas.height = video.videoHeight || 1080;
-            const ctx = canvas.getContext('2d');
-            
-            // Mirror flip logic could be added if video is mirrored
-            ctx.filter = video.style.filter || 'none';
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Draw Frame
-            if (state.frame !== 'none') {
-                ctx.filter = 'none';
-                let lw = 0;
-                let strokeCol = '#fff';
-                
-                if (state.frame === 'classic') { lw = 50; strokeCol = '#fff'; }
-                if (state.frame === 'elegant') { lw = 20; strokeCol = '#E5D3B3'; } // Gold-ish
-                if (state.frame === 'minimal') { lw = 10; strokeCol = '#000'; }
-
-                if (lw > 0) {
-                    ctx.lineWidth = lw;
-                    ctx.strokeStyle = strokeCol;
-                    ctx.strokeRect(lw/2, lw/2, canvas.width - lw, canvas.height - lw);
-                }
-            }
-
-            state.photoDataUrl = canvas.toDataURL('image/png', 0.9);
-        }
-        
-        // Pause between shots if multiple
-        if (i < photosToTake) {
-            await new Promise(r => setTimeout(r, 1500));
-        }
+    if (state.photoDataUrl) {
+        document.getElementById('result-image').src = state.photoDataUrl;
+        navigateTo('result');
+    } else {
+        showToast('Error al capturar la fotografía.', 'error');
     }
-
-    if (photoCounterEl) photoCounterEl.style.display = 'none';
-    
-    // UI re-enable
-    state.isCapturing = false;
-    captureBtn.style.pointerEvents = 'auto';
-    captureBtn.style.opacity = '1';
-    
-    // Transition to result
-    const resultImg = document.getElementById('result-image');
-    if (resultImg && state.photoDataUrl) {
-        resultImg.src = state.photoDataUrl;
-    }
-    navigateTo('result');
-});
-
-// Retake button inside booth
-document.getElementById('retake')?.addEventListener('click', () => {
-    state.photoDataUrl = null;
-    showToast('Sesión reiniciada', 'info');
 });
 
 /* ==========================================================================
-   RESULT SCREEN ACTIONS
+   PANTALLA DE RESULTADO
    ========================================================================== */
-document.getElementById('btn-download')?.addEventListener('click', () => {
-    if (!state.photoDataUrl) return;
-    const a = document.createElement('a');
-    a.href = state.photoDataUrl;
-    a.download = `Angel_Clara_Photobooth_${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('¡Fotografía descargada con éxito!', 'success');
-});
-
-document.getElementById('btn-email')?.addEventListener('click', () => {
+document.getElementById('btn-save-send')?.addEventListener('click', () => {
     const modal = document.getElementById('email-modal');
     if (modal) modal.style.display = 'flex';
 });
 
 document.getElementById('btn-retake-result')?.addEventListener('click', () => {
-    state.photoDataUrl = null;
+    state.photoDataUrl   = null;
+    state.capturedFrames = [];
     navigateTo('menu');
 });
 
 /* ==========================================================================
-   EMAIL MODAL
+   MODAL — GUARDAR & ENVIAR
    ========================================================================== */
 document.getElementById('btn-close-modal')?.addEventListener('click', () => {
-    const modal = document.getElementById('email-modal');
-    if (modal) modal.style.display = 'none';
+    document.getElementById('email-modal').style.display = 'none';
 });
 
 document.getElementById('btn-send-email')?.addEventListener('click', () => {
-    const input = document.getElementById('email-input');
-    const email = input?.value;
-    
-    if (!email || !email.includes('@')) {
-        showToast('Por favor ingresa un correo electrónico válido.', 'error');
+    const input   = document.getElementById('email-input');
+    const email   = input?.value?.trim();
+    const status  = document.getElementById('email-status');
+    const btnSend = document.getElementById('btn-send-email');
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('Ingresa un correo electrónico válido.', 'error');
         return;
     }
-    
-    const status = document.getElementById('email-status');
-    const btnSend = document.getElementById('btn-send-email');
-    
-    if (status) status.textContent = 'Enviando...';
+
+    // Descarga inmediata en el dispositivo
+    if (state.photoDataUrl) {
+        const a = document.createElement('a');
+        a.href     = state.photoDataUrl;
+        a.download = `Angel_Clara_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    if (status)  status.textContent = 'Enviando...';
     if (btnSend) btnSend.disabled = true;
-    
-    // Simulate API delay
+
+    // Simular llamada al API de email
     setTimeout(() => {
-        if (status) status.textContent = '';
+        if (status)  status.textContent = '';
         if (btnSend) btnSend.disabled = false;
-        if (input) input.value = '';
-        
-        const modal = document.getElementById('email-modal');
-        if (modal) modal.style.display = 'none';
-        
-        showToast('¡Correo enviado con éxito! Revisa tu bandeja de entrada.', 'success');
-    }, 1500);
+        if (input)   input.value = '';
+        document.getElementById('email-modal').style.display = 'none';
+        showToast('¡Foto guardada y correo enviado!', 'success');
+    }, 1600);
 });
 
 /* ==========================================================================
-   INITIALIZATION
+   INIT
    ========================================================================== */
-window.addEventListener('DOMContentLoaded', () => {
-    navigateTo('landing');
-});
+window.addEventListener('DOMContentLoaded', () => navigateTo('landing'));
