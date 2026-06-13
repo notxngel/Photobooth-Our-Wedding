@@ -26,7 +26,7 @@
     --spacing-lg: 2rem;
     --spacing-xl: 4rem;
 
-    /* Safe areas para iPad */
+    /* Safe areas para iPhone X / notch devices */
     --safe-top:    env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left:   env(safe-area-inset-left, 0px);
@@ -37,6 +37,11 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+html {
+    /* iOS Safari URL-bar-aware height */
+    height: -webkit-fill-available;
 }
 
 html, body {
@@ -50,6 +55,10 @@ html, body {
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    min-height: -webkit-fill-available;
 }
 
 button {
@@ -78,6 +87,9 @@ ul, ol { list-style: none; }
     z-index: 10;
     transition: opacity var(--transition-slow);
     background-color: var(--color-bg);
+    /* Dynamic viewport height — handles iOS Safari URL bar */
+    height: 100vh;
+    height: 100dvh;
 }
 
 .screen.active {
@@ -613,7 +625,7 @@ ul, ol { list-style: none; }
 /* ==========================================================================
    PANTALLA DE RESULTADO
    ========================================================================== */
-.result-layout { justify-content: center; }
+.result-layout { justify-content: flex-start; }
 
 .result-header {
     flex-direction: column;
@@ -660,6 +672,52 @@ ul, ol { list-style: none; }
     display: block;
     border: 1px solid rgba(0,0,0,0.08);
 }
+
+/* ── Rollo: la tira de celuloide ya trae su propio fondo — sin paspartú ── */
+.result-preview-wrapper.mode-rollo {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    transform: none;
+    width: auto;
+    max-width: none;
+    align-self: center;
+}
+.result-preview-wrapper.mode-rollo:hover { transform: none; }
+.result-preview-wrapper.mode-rollo #result-image {
+    width: auto;
+    max-width: 100%;
+    max-height: 58vh;
+    margin: 0 auto;
+    border: none;
+    border-radius: 3px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.6);
+}
+
+/* ── Díptico: el canvas ya trae paspartú crema — marco exterior mínimo ── */
+.result-preview-wrapper.mode-pareja {
+    max-width: 540px;
+    padding: 8px;
+    transform: rotate(0.4deg);
+}
+.result-preview-wrapper.mode-pareja #result-image {
+    max-height: none;
+}
+
+/* Acciones del resultado */
+.result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.btn-text {
+    color: rgba(245, 230, 211, 0.55);
+    letter-spacing: 0.15em;
+    background: transparent;
+}
+.btn-text:hover,
+.btn-text:active { color: var(--color-text); }
 
 /* ==========================================================================
    MODAL — GUARDAR & ENVIAR
@@ -786,10 +844,85 @@ ul, ol { list-style: none; }
 }
 
 /* ==========================================================================
-   RESPONSIVE — pantallas pequeñas
+   ESTADOS ACTIVOS — retroalimentación táctil
+   ========================================================================== */
+.btn-primary:active  { opacity: 0.82; transform: scale(0.98); }
+.btn-outline:active  { opacity: 0.82; transform: scale(0.98); }
+.btn-shutter:active  { transform: scale(0.94); }
+.btn-icon:active,
+.btn-icon-blur:active { opacity: 0.7; }
+.mode-card:active    { background: var(--color-accent-dim); }
+.pill-btn:active     { opacity: 0.75; }
+
+/* ==========================================================================
+   RESPONSIVE — iPhones y smartphones (≤ 430 px)
+   ========================================================================== */
+@media (max-width: 430px) {
+
+    /* Contenedores */
+    .screen-container {
+        padding: var(--spacing-md);
+        padding-top:    calc(var(--spacing-md) + var(--safe-top));
+        padding-bottom: calc(var(--spacing-md) + var(--safe-bottom));
+    }
+
+    /* ── Landing ── */
+    .landing-container      { padding: var(--spacing-lg) var(--spacing-md); }
+    .landing-content        { gap: 1.1rem; }
+    .landing-subtitle-wrapper { margin-bottom: var(--spacing-lg); }
+    .landing-subtitle       { font-size: 1.15rem; }
+
+    /* ── Menú ── */
+    .screen-header  { margin-bottom: var(--spacing-lg); }
+    .mode-card      { padding: 1.1rem var(--spacing-lg); }
+    .mode-card h3   { font-size: 1.4rem; }
+    .mode-card-badge { font-size: 1.7rem; }
+    .action-footer  { margin-top: var(--spacing-lg); }
+
+    /* ── Resultado ── */
+    #result-image {
+        max-height: 42vh;
+    }
+    .result-preview-wrapper {
+        max-width: 100%;
+        margin-bottom: var(--spacing-lg);
+        padding: 10px;
+        padding-bottom: 30px;
+    }
+    .result-preview-wrapper.mode-rollo #result-image { max-height: 52vh; }
+    .result-preview-wrapper.mode-pareja { padding: 6px; }
+    .result-header { margin-bottom: var(--spacing-md); }
+    .result-actions { gap: var(--spacing-sm); }
+
+    /* ── Modal ── */
+    .modal-card    { padding: var(--spacing-md); }
+    .modal-header  { margin-bottom: var(--spacing-md); }
+    .modal-header h3 { font-size: 1.5rem; }
+}
+
+/* ==========================================================================
+   RESPONSIVE — iPhone SE y teléfonos pequeños (≤ 376 px)
+   ========================================================================== */
+@media (max-width: 376px) {
+    .landing-title   { font-size: clamp(2.2rem, 10vw, 3rem); }
+    .landing-subtitle { font-size: 1rem; }
+    .mode-card h3    { font-size: 1.3rem; }
+    .mode-card-badge { font-size: 1.5rem; }
+    .btn             { font-size: 0.92rem; padding: 0.85rem 1.4rem; }
+    #result-image    { max-height: 38vh; }
+}
+
+/* ==========================================================================
+   RESPONSIVE — pantallas cortas (landscape móvil, ≤ 680 px alto)
    ========================================================================== */
 @media (max-height: 680px) {
-    .btn-shutter  { width: 66px; height: 66px; }
-    .shutter-inner{ width: 54px; height: 54px; }
-    .settings-card{ padding: var(--spacing-md); gap: var(--spacing-md); }
+    .btn-shutter   { width: 66px; height: 66px; }
+    .shutter-inner { width: 54px; height: 54px; }
+    .settings-card { padding: var(--spacing-md); gap: var(--spacing-md); }
+    .landing-content          { gap: 0.75rem; }
+    .landing-subtitle-wrapper { margin-bottom: var(--spacing-md); }
+    .screen-header  { margin-bottom: var(--spacing-md); }
+    .action-footer  { margin-top:    var(--spacing-md); }
+    #result-image   { max-height: 32vh; }
+    .result-preview-wrapper { margin-bottom: var(--spacing-md); }
 }

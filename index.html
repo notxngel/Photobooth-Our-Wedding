@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
     <meta name="description" content="Photo Booth premium para la boda de Angel & Clara — 16 de Julio, 2026">
-    <meta name="theme-color" content="#1A1510">
+    <meta name="theme-color" content="#0F0C09">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Photo Booth">
     <title>Angel & Clara — Photo Booth</title>
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -191,13 +196,17 @@
                 <img id="result-image" src="" alt="Fotografía final">
             </div>
 
-            <button id="btn-save-send" class="btn btn-primary btn-full" aria-label="Guardar y enviar fotografía">
-                Guardar &amp; Enviar
-            </button>
-
-            <button id="btn-retake-result" class="btn btn-outline btn-full mt-4" aria-label="Nueva sesión">
-                Nueva Sesión
-            </button>
+            <div class="result-actions">
+                <button id="btn-download" class="btn btn-primary btn-full" aria-label="Descargar fotografía">
+                    Descargar
+                </button>
+                <button id="btn-save-send" class="btn btn-outline btn-full" aria-label="Enviar fotografía por correo">
+                    Enviar por Correo
+                </button>
+                <button id="btn-retake-result" class="btn btn-text btn-full" aria-label="Nueva sesión">
+                    Nueva Sesión
+                </button>
+            </div>
         </div>
     </div>
 

@@ -122,7 +122,30 @@ function navigateTo(screenId) {
     }
 }
 
-document.getElementById('btn-start')?.addEventListener('click', () => navigateTo('menu'));
+/* ==========================================================================
+   PANTALLA COMPLETA
+   ========================================================================== */
+// Instalada desde "Añadir a pantalla de inicio" la app ya corre standalone
+function isStandalone() {
+    return window.navigator.standalone === true ||
+           window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+}
+
+// En Safari de iPad el Fullscreen API sí funciona para cualquier elemento
+// (en iPhone solo para <video> — el try/catch lo ignora silenciosamente)
+function tryFullscreen() {
+    if (isStandalone() || document.fullscreenElement || document.webkitFullscreenElement) return;
+    const el = document.documentElement;
+    try {
+        if (el.requestFullscreen)            el.requestFullscreen().catch(() => {});
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } catch (_) { /* no soportado — seguimos en ventana normal */ }
+}
+
+document.getElementById('btn-start')?.addEventListener('click', () => {
+    tryFullscreen();
+    navigateTo('menu');
+});
 document.getElementById('btn-back-menu')?.addEventListener('click', () => navigateTo('landing'));
 document.getElementById('btn-back-booth')?.addEventListener('click', () => navigateTo('menu'));
 
@@ -322,64 +345,130 @@ function captureFrame(applyFrameBorder = false) {
 }
 
 /* ==========================================================================
+   HELPERS DE COMPOSICIÓN
+   ========================================================================== */
+function loadImage(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = () => resolve(img);
+        img.src = src;
+    });
+}
+
+// Dibuja la imagen llenando el destino sin estirarla (crop centrado),
+// equivalente a object-fit: cover de CSS.
+function drawImageCover(ctx, img, dx, dy, dw, dh) {
+    const sRatio = img.width / img.height;
+    const dRatio = dw / dh;
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+    if (sRatio > dRatio) {
+        sw = img.height * dRatio;
+        sx = (img.width - sw) / 2;
+    } else {
+        sh = img.width / dRatio;
+        sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+// Safari < 16 no soporta ctx.roundRect — path manual
+function roundedRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y,     x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x,     y + h, r);
+    ctx.arcTo(x,     y + h, x,     y,     r);
+    ctx.arcTo(x,     y,     x + w, y,     r);
+    ctx.closePath();
+}
+
+/* ==========================================================================
    COMPOSICIÓN — ROLLO (tira de 4 fotos)
    ========================================================================== */
 async function composeRollo(frames) {
-    const PW = 720, PH = 405;       // tamaño de cada foto dentro de la tira
-    const PAD = 28, GAP = 10;
-    const FOOTER = 90;
-    const cw = PW + PAD * 2;
-    const ch = PH * 4 + GAP * 3 + PAD * 2 + FOOTER;
+    const PW = 600, PH = 450;       // slots 4:3 — coincide con cámaras frontales
+    const RAIL = 46;                // rieles laterales con perforaciones
+    const GAP = 16;
+    const TOP = 58, FOOTER = 118;
+    const cw = PW + RAIL * 2;
+    const ch = TOP + PH * 4 + GAP * 3 + FOOTER;
 
     const c = document.createElement('canvas');
     c.width  = cw;
     c.height = ch;
     const ctx = c.getContext('2d');
 
-    // Fondo oscuro de la tira
-    ctx.fillStyle = '#0D0B08';
+    // Fondo de celuloide con leve gradiente lateral
+    const bg = ctx.createLinearGradient(0, 0, cw, 0);
+    bg.addColorStop(0,   '#0B0907');
+    bg.addColorStop(0.5, '#12100C');
+    bg.addColorStop(1,   '#0B0907');
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, cw, ch);
 
-    // Perforaciones decorativas de celuloide
-    ctx.fillStyle = '#1A1510';
-    const hs = 9, hg = 20;
-    for (let y = PAD; y < ch - FOOTER - PAD; y += hg) {
-        ctx.fillRect(5,       y, hs, hs - 2);
-        ctx.fillRect(cw - 5 - hs, y, hs, hs - 2);
+    // Perforaciones de celuloide a lo largo de toda la tira
+    const phW = 20, phH = 14, phGap = 34, phR = 4;
+    ctx.fillStyle = 'rgba(245, 230, 211, 0.14)';
+    for (let y = 26; y < ch - 26 - phH; y += phGap) {
+        roundedRectPath(ctx, (RAIL - phW) / 2, y, phW, phH, phR);
+        ctx.fill();
+        roundedRectPath(ctx, cw - RAIL + (RAIL - phW) / 2, y, phW, phH, phR);
+        ctx.fill();
     }
 
-    // Fotos
-    for (let i = 0; i < frames.length; i++) {
-        const img = new Image();
-        const loaded = new Promise(r => { img.onload = r; img.onerror = r; });
-        img.src = frames[i];
-        await loaded;
-        const y = PAD + i * (PH + GAP);
-        ctx.drawImage(img, PAD, y, PW, PH);
-    }
-
-    // Texto al pie
-    const ty = ch - FOOTER / 2;
-    ctx.fillStyle = '#C9A96E';
-    ctx.font = '300 22px "Cormorant Garamond", Georgia, serif';
+    // Marca superior estilo "edge print" de película
+    ctx.fillStyle = 'rgba(201, 169, 110, 0.55)';
+    ctx.font = '300 15px "Outfit", system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Angel & Clara', cw / 2, ty - 14);
-    ctx.fillStyle = 'rgba(245,230,211,0.4)';
-    ctx.font = '300 13px "Outfit", system-ui, sans-serif';
-    ctx.fillText('16 · 07 · 2026', cw / 2, ty + 14);
+    ctx.fillText('P H O T O  B O O T H', cw / 2, TOP / 2 + 6);
 
-    return c.toDataURL('image/png', 0.92);
+    // Fotos con crop centrado (sin estirar) y borde fino
+    for (let i = 0; i < frames.length; i++) {
+        const img = await loadImage(frames[i]);
+        const y = TOP + i * (PH + GAP);
+        drawImageCover(ctx, img, RAIL, y, PW, PH);
+        ctx.strokeStyle = 'rgba(245, 230, 211, 0.16)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(RAIL + 0.5, y + 0.5, PW - 1, PH - 1);
+    }
+
+    // Footer — ornamento + nombres + fecha
+    const oy = ch - FOOTER + 30;
+    ctx.strokeStyle = 'rgba(201, 169, 110, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cw / 2 - 70, oy); ctx.lineTo(cw / 2 - 16, oy);
+    ctx.moveTo(cw / 2 + 16, oy); ctx.lineTo(cw / 2 + 70, oy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cw / 2,     oy - 6);
+    ctx.lineTo(cw / 2 + 7, oy);
+    ctx.lineTo(cw / 2,     oy + 6);
+    ctx.lineTo(cw / 2 - 7, oy);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.fillStyle = '#C9A96E';
+    ctx.font = '400 34px "Cormorant Garamond", Georgia, serif';
+    ctx.fillText('Angel & Clara', cw / 2, oy + 46);
+    ctx.fillStyle = 'rgba(245, 230, 211, 0.45)';
+    ctx.font = '300 14px "Outfit", system-ui, sans-serif';
+    ctx.fillText('16 · 07 · 2026', cw / 2, oy + 72);
+
+    return c.toDataURL('image/png');
 }
 
 /* ==========================================================================
    COMPOSICIÓN — DÍPTICO (2 fotos lado a lado)
    ========================================================================== */
 async function composeDiptych(frames) {
-    const PW = 700, PH = 393;
-    const PAD = 24, GAP = 14;
-    const FOOTER = 56;
+    const PW = 640, PH = 480;       // slots 4:3 — sin distorsión
+    const PAD = 30, GAP = 18;
+    const FOOTER = 72;
     const cw = PW * 2 + GAP + PAD * 2;
-    const ch = PH + PAD * 2 + FOOTER;
+    const ch = PAD + PH + FOOTER;
 
     const c = document.createElement('canvas');
     c.width  = cw;
@@ -390,21 +479,23 @@ async function composeDiptych(frames) {
     ctx.fillStyle = '#F5E6D3';
     ctx.fillRect(0, 0, cw, ch);
 
+    // Fotos con crop centrado (sin estirar) y borde fino
     for (let i = 0; i < frames.length; i++) {
-        const img = new Image();
-        const loaded = new Promise(r => { img.onload = r; img.onerror = r; });
-        img.src = frames[i];
-        await loaded;
-        ctx.drawImage(img, PAD + i * (PW + GAP), PAD, PW, PH);
+        const img = await loadImage(frames[i]);
+        const x = PAD + i * (PW + GAP);
+        drawImageCover(ctx, img, x, PAD, PW, PH);
+        ctx.strokeStyle = 'rgba(80, 60, 40, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, PAD + 0.5, PW - 1, PH - 1);
     }
 
     // Texto al pie
-    ctx.fillStyle = 'rgba(80,60,40,0.55)';
-    ctx.font = '300 17px "Cormorant Garamond", Georgia, serif';
+    ctx.fillStyle = 'rgba(80, 60, 40, 0.6)';
+    ctx.font = '400 22px "Cormorant Garamond", Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Angel & Clara · 16.07.2026', cw / 2, ch - 18);
+    ctx.fillText('Angel & Clara · 16 . 07 . 2026', cw / 2, ch - 26);
 
-    return c.toDataURL('image/png', 0.92);
+    return c.toDataURL('image/png');
 }
 
 /* ==========================================================================
@@ -447,6 +538,12 @@ captureBtn?.addEventListener('click', async () => {
     captureBtn.disabled = false;
 
     if (state.photoDataUrl) {
+        // El wrapper del resultado se adapta al modo (paspartú vs. celuloide)
+        const wrapper = document.querySelector('.result-preview-wrapper');
+        if (wrapper) {
+            wrapper.classList.remove('mode-retrato', 'mode-pareja', 'mode-rollo');
+            wrapper.classList.add(`mode-${state.mode}`);
+        }
         document.getElementById('result-image').src = state.photoDataUrl;
         navigateTo('result');
     } else {
@@ -457,6 +554,21 @@ captureBtn?.addEventListener('click', async () => {
 /* ==========================================================================
    PANTALLA DE RESULTADO
    ========================================================================== */
+function downloadPhoto() {
+    if (!state.photoDataUrl) return false;
+    const a = document.createElement('a');
+    a.href     = state.photoDataUrl;
+    a.download = `Angel_Clara_${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+}
+
+document.getElementById('btn-download')?.addEventListener('click', () => {
+    if (downloadPhoto()) showToast('Foto guardada en tu dispositivo.', 'success');
+});
+
 document.getElementById('btn-save-send')?.addEventListener('click', () => {
     const modal = document.getElementById('email-modal');
     if (modal) modal.style.display = 'flex';
@@ -487,14 +599,7 @@ document.getElementById('btn-send-email')?.addEventListener('click', () => {
     }
 
     // Descarga inmediata en el dispositivo
-    if (state.photoDataUrl) {
-        const a = document.createElement('a');
-        a.href     = state.photoDataUrl;
-        a.download = `Angel_Clara_${Date.now()}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+    downloadPhoto();
 
     if (status)  status.textContent = 'Enviando...';
     if (btnSend) btnSend.disabled = true;
