@@ -459,6 +459,57 @@ ul, ol { list-style: none; }
 }
 .photo-counter.visible { opacity: 1; }
 
+/* Guía de encuadre — marca la zona exacta que se capturará (WYSIWYG) */
+.frame-guide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    pointer-events: none;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    border-radius: 2px;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.22);
+    opacity: 0;
+    transition: opacity var(--transition-medium);
+}
+
+/* Overlay de error de cámara */
+.camera-error {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    background: rgba(10, 8, 6, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.camera-error-card {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    color: var(--color-text);
+    max-width: 320px;
+}
+.camera-error-card svg  { color: var(--color-accent); opacity: 0.8; }
+
+.camera-error-title {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    letter-spacing: 0.04em;
+}
+.camera-error-text {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    line-height: 1.5;
+}
+.camera-error .btn { margin-top: var(--spacing-sm); }
+
 /* Barra superior flotante */
 .booth-top-bar {
     position: absolute;
@@ -926,3 +977,123 @@ ul, ol { list-style: none; }
     #result-image   { max-height: 32vh; }
     .result-preview-wrapper { margin-bottom: var(--spacing-md); }
 }
+
+/* ==========================================================================
+   LANGUAGE SELECTOR
+   ========================================================================== */
+.lang-selector {
+    display: flex;
+    gap: 2px;
+    background: rgba(15, 12, 9, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(245, 230, 211, 0.12);
+    border-radius: 999px;
+    padding: 2px;
+    z-index: 50;
+}
+
+.lang-selector--landing {
+    position: absolute;
+    top: calc(var(--spacing-md) + var(--safe-top));
+    right: calc(var(--spacing-md) + var(--safe-right));
+}
+
+.lang-selector--menu {
+    /* Positioned inside the screen-header flex row */
+    flex-shrink: 0;
+}
+
+.lang-btn {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    color: rgba(245, 230, 211, 0.5);
+    background: transparent;
+    transition: var(--transition-fast);
+    cursor: pointer;
+    border: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.lang-btn:hover { color: var(--color-text); }
+.lang-btn.active,
+.lang-btn[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+/* ==========================================================================
+   iOS PWA INSTALL BANNER
+   ========================================================================== */
+.pwa-ios-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    padding: var(--spacing-md);
+    padding-bottom: calc(var(--spacing-md) + var(--safe-bottom));
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+}
+.pwa-ios-banner.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.pwa-ios-card {
+    background: rgba(12, 10, 7, 0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(201, 169, 110, 0.25);
+    border-radius: 16px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    text-align: center;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.pwa-ios-title {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    color: var(--color-accent);
+    letter-spacing: 0.08em;
+}
+
+.pwa-ios-text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: rgba(245, 230, 211, 0.7);
+}
+.pwa-ios-text strong {
+    color: var(--color-text);
+    font-weight: 400;
+}
+
+.pwa-share-icon {
+    display: inline-block;
+    font-size: 0.9em;
+    vertical-align: middle;
+    color: var(--color-accent);
+}
+
+.btn-sm {
+    padding: 0.55rem 1.4rem;
+    font-size: 0.78rem;
+}
+

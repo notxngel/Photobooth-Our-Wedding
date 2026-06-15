@@ -1,5 +1,5 @@
 /**
- * app.js — Angel & Clara Photo Booth
+ * app.js — Matamoro's Wedding Photo Booth
  */
 
 /* ==========================================================================
@@ -8,15 +8,23 @@
 const state = {
     mode: null,
     filter: 'color',
-    frame: 'classic',
     stream: null,
     photoDataUrl: null,
     capturedFrames: [],
-    isCapturing: false
+    isCapturing: false,
+    lang: 'es'
 };
 
 const PHOTO_COUNTS = { retrato: 1, pareja: 2, rollo: 4 };
 const MODE_LABELS  = { retrato: 'Retrato', pareja: 'Díptico', rollo: 'Rollo' };
+
+// Aspecto (ancho/alto) del recorte capturado. Todos los modos usan 4:3 para
+// que cada foto encaje sin distorsión en las celdas de la tira de película.
+// La guía de encuadre en pantalla refleja exactamente esta zona (WYSIWYG).
+const MODE_ASPECT  = { retrato: 4 / 3, pareja: 4 / 3, rollo: 4 / 3 };
+
+// Calidad JPEG para todas las salidas (visualmente sin pérdida, mucho más ligero que PNG)
+const JPEG_QUALITY = 0.92;
 
 const screens = {
     landing: document.getElementById('landing'),
@@ -24,6 +32,149 @@ const screens = {
     booth:   document.getElementById('booth'),
     result:  document.getElementById('result')
 };
+
+/* ==========================================================================
+   INTERNACIONALIZACIÓN (i18n)
+   ========================================================================== */
+const TRANSLATIONS = {
+    es: {
+        // Landing
+        'landing.subtitle1':    'Un momento capturado,',
+        'landing.subtitle2':    'una memoria eterna',
+        'landing.cta':          'Comenzar Experiencia',
+        'landing.date':         '07 · 16 · 26',
+        // Menu
+        'menu.title':           'Sesión',
+        'menu.retrato':         'Retrato',
+        'menu.retrato.desc':    'El instante perfecto',
+        'menu.diptico':         'Díptico',
+        'menu.diptico.desc':    'Dos fotos, un recuerdo',
+        'menu.rollo':           'Rollo',
+        'menu.rollo.desc':      'Tira clásica de cuatro',
+        'menu.continue':        'Continuar a la Cámara',
+        'menu.nomode':          'Selecciona el tipo de sesión primero.',
+        // Booth
+        'booth.retry':          'Reintentar',
+        'booth.cam.title':      'No pudimos acceder a la cámara',
+        'booth.cam.text':       'Revisa que diste permiso de cámara en tu navegador.',
+        'booth.cam.denied':     'Permiso de cámara denegado. Actívalo en los ajustes de tu navegador y reintenta.',
+        'booth.cam.notfound':   'No se encontró ninguna cámara en este dispositivo.',
+        'booth.cam.generic':    'No se pudo acceder a la cámara. Revisa los permisos y reintenta.',
+        'booth.cam.nosupport':  'Tu navegador no soporta el acceso a la cámara. Prueba con Safari o Chrome actualizado.',
+        'booth.settings':       'Ajustes',
+        'booth.filters':        'Filtros',
+        // Result
+        'result.title':         'El Resultado',
+        'result.subtitle':      'Tu momento ha sido capturado',
+        'result.download':      'Descargar',
+        'result.email':         'Enviar por Correo',
+        'result.retake':        'Nueva Sesión',
+        'result.saved':         'Foto guardada en tu dispositivo.',
+        'result.error':         'Error al capturar la fotografía.',
+        // Modal
+        'modal.title':          'Guardar & Enviar',
+        'modal.desc':           'La foto se descargará en tu dispositivo y te la enviaremos por correo.',
+        'modal.placeholder':    'tu@correo.com',
+        'modal.send':           'Guardar y Enviar',
+        'modal.invalid':        'Ingresa un correo electrónico válido.',
+        'modal.sending':        'Enviando...',
+        'modal.success':        '¡Foto guardada y correo enviado!',
+        // iOS Install
+        'pwa.ios.title':        'Experiencia completa',
+        'pwa.ios.text':         'Pulsa <strong>Compartir</strong> <span class="pwa-share-icon">⬆</span> y elige <strong>"Añadir a pantalla de inicio"</strong> para usar sin barras de navegación.',
+        'pwa.ios.dismiss':      'Entendido'
+    },
+    en: {
+        // Landing
+        'landing.subtitle1':    'A moment captured,',
+        'landing.subtitle2':    'a memory forever',
+        'landing.cta':          'Start Experience',
+        'landing.date':         '07 · 16 · 26',
+        // Menu
+        'menu.title':           'Session',
+        'menu.retrato':         'Portrait',
+        'menu.retrato.desc':    'The perfect moment',
+        'menu.diptico':         'Diptych',
+        'menu.diptico.desc':    'Two photos, one memory',
+        'menu.rollo':           'Film Roll',
+        'menu.rollo.desc':      'Classic strip of four',
+        'menu.continue':        'Continue to Camera',
+        'menu.nomode':          'Select the session type first.',
+        // Booth
+        'booth.retry':          'Retry',
+        'booth.cam.title':      'We couldn\'t access the camera',
+        'booth.cam.text':       'Make sure you granted camera permissions in your browser.',
+        'booth.cam.denied':     'Camera permission denied. Enable it in your browser settings and try again.',
+        'booth.cam.notfound':   'No camera found on this device.',
+        'booth.cam.generic':    'Could not access the camera. Check permissions and try again.',
+        'booth.cam.nosupport':  'Your browser doesn\'t support camera access. Try an updated Safari or Chrome.',
+        'booth.settings':       'Settings',
+        'booth.filters':        'Filters',
+        // Result
+        'result.title':         'The Result',
+        'result.subtitle':      'Your moment has been captured',
+        'result.download':      'Download',
+        'result.email':         'Send by Email',
+        'result.retake':        'New Session',
+        'result.saved':         'Photo saved to your device.',
+        'result.error':         'Error capturing the photograph.',
+        // Modal
+        'modal.title':          'Save & Send',
+        'modal.desc':           'The photo will download to your device and we\'ll email it to you.',
+        'modal.placeholder':    'your@email.com',
+        'modal.send':           'Save and Send',
+        'modal.invalid':        'Please enter a valid email address.',
+        'modal.sending':        'Sending...',
+        'modal.success':        'Photo saved and email sent!',
+        // iOS Install
+        'pwa.ios.title':        'Full experience',
+        'pwa.ios.text':         'Tap <strong>Share</strong> <span class="pwa-share-icon">⬆</span> and choose <strong>"Add to Home Screen"</strong> to use without browser bars.',
+        'pwa.ios.dismiss':      'Got it'
+    }
+};
+
+// Localized mode labels — update dynamically based on lang
+function getLocalizedModeLabels() {
+    const t = TRANSLATIONS[state.lang] || TRANSLATIONS.es;
+    return { retrato: t['menu.retrato'], pareja: t['menu.diptico'], rollo: t['menu.rollo'] };
+}
+
+function t(key) {
+    return (TRANSLATIONS[state.lang] || TRANSLATIONS.es)[key] || key;
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        const val = t(key);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = val;
+        } else if (el.dataset.i18nHtml !== undefined) {
+            el.innerHTML = val;
+        } else {
+            el.textContent = val;
+        }
+    });
+    // Update active lang buttons
+    document.querySelectorAll('[data-lang]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === state.lang);
+        btn.setAttribute('aria-pressed', btn.dataset.lang === state.lang ? 'true' : 'false');
+    });
+    // Update html lang attribute
+    document.documentElement.lang = state.lang;
+    // Update mode badge if booth is active
+    const badge = document.getElementById('current-mode-display');
+    if (badge && state.mode) {
+        badge.textContent = getLocalizedModeLabels()[state.mode] || '';
+    }
+}
+
+function changeLanguage(lang) {
+    if (!TRANSLATIONS[lang]) return;
+    state.lang = lang;
+    try { localStorage.setItem('pb-lang', lang); } catch (_) {}
+    applyTranslations();
+}
 
 /* ==========================================================================
    UTILIDADES
@@ -116,7 +267,7 @@ function navigateTo(screenId) {
     if (screenId === 'booth') {
         startCamera();
         const badge = document.getElementById('current-mode-display');
-        if (badge) badge.textContent = MODE_LABELS[state.mode] || '';
+        if (badge) badge.textContent = getLocalizedModeLabels()[state.mode] || '';
     } else if (state.stream) {
         stopCamera();
     }
@@ -170,7 +321,7 @@ document.querySelectorAll('.mode-card').forEach(card => {
 
 document.getElementById('btn-start-camera')?.addEventListener('click', () => {
     if (!state.mode) {
-        showToast('Selecciona el tipo de sesión primero.', 'warning');
+        showToast(t('menu.nomode'), 'warning');
         return;
     }
     navigateTo('booth');
@@ -182,15 +333,34 @@ document.getElementById('btn-start-camera')?.addEventListener('click', () => {
 const video = document.getElementById('player');
 
 async function startCamera() {
+    hideCameraError();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+        showCameraError(t('booth.cam.nosupport'));
+        return;
+    }
+
     try {
         state.stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+            // Pedimos la mayor resolución disponible — el recorte usa la real
+            video: { facingMode: 'user', width: { ideal: 2560 }, height: { ideal: 1440 } },
             audio: false
         });
-        if (video) video.srcObject = state.stream;
+        if (video) {
+            video.srcObject = state.stream;
+            video.addEventListener('loadedmetadata', () => {
+                applyVideoFilter();
+                updateFrameGuide();
+            }, { once: true });
+        }
     } catch (err) {
-        showToast('No se pudo acceder a la cámara. Revisa los permisos.', 'error');
         console.error('Camera error:', err);
+        const msg = (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError'))
+            ? t('booth.cam.denied')
+            : (err && err.name === 'NotFoundError')
+                ? t('booth.cam.notfound')
+                : t('booth.cam.generic');
+        showCameraError(msg);
     }
 }
 
@@ -199,6 +369,48 @@ function stopCamera() {
     state.stream = null;
     if (video) video.srcObject = null;
 }
+
+/* ── Overlay de error de cámara ─────────────────────────────────────────── */
+function showCameraError(msg) {
+    const el  = document.getElementById('camera-error');
+    const txt = document.getElementById('camera-error-text');
+    if (txt && msg) txt.textContent = msg;
+    if (el) el.style.display = 'flex';
+}
+
+function hideCameraError() {
+    const el = document.getElementById('camera-error');
+    if (el) el.style.display = 'none';
+}
+
+document.getElementById('btn-retry-camera')?.addEventListener('click', () => startCamera());
+
+/* ── Guía de encuadre — refleja en pantalla la zona que se capturará ────── */
+const frameGuide = document.getElementById('frame-guide');
+
+function updateFrameGuide() {
+    if (!frameGuide || !video || !video.videoWidth) return;
+    if (!screens.booth?.classList.contains('active')) return;
+
+    const vw = video.videoWidth,  vh = video.videoHeight;
+    const ew = video.clientWidth, eh = video.clientHeight;
+    if (!ew || !eh) return;
+
+    // object-fit: cover → el video se escala para llenar el viewport
+    const scale = Math.max(ew / vw, eh / vh);
+    const ta = MODE_ASPECT[state.mode] || (vw / vh);
+
+    // Recorte centrado del video al aspecto del modo
+    let sw, sh;
+    if (vw / vh > ta) { sh = vh; sw = vh * ta; }
+    else              { sw = vw; sh = vw / ta; }
+
+    frameGuide.style.width   = (sw * scale) + 'px';
+    frameGuide.style.height  = (sh * scale) + 'px';
+    frameGuide.style.opacity = '1';
+}
+
+window.addEventListener('resize', updateFrameGuide);
 
 function applyVideoFilter() {
     if (!video) return;
@@ -255,19 +467,6 @@ document.querySelectorAll('[data-filter]').forEach(btn => {
     });
 });
 
-// Marcos
-document.querySelectorAll('[data-frame]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-frame]').forEach(b => {
-            b.classList.remove('active');
-            b.setAttribute('aria-pressed', 'false');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-        state.frame = btn.dataset.frame;
-    });
-});
-
 /* ==========================================================================
    HELPERS DE CAPTURA
    ========================================================================== */
@@ -304,44 +503,109 @@ function setPhotoCounter(current, total) {
     photoCounterEl.classList.add('visible');
 }
 
-// Captura un frame del video y lo dibuja en el canvas oculto.
-// Aplica el espejo horizontal para que coincida con lo que el usuario ve.
-function captureFrame(applyFrameBorder = false) {
+/* ── Motor de filtros por color-matrix ──────────────────────────────────────
+   Aplicamos los filtros en la imagen capturada con matrices de color en lugar
+   de ctx.filter, que tiene soporte irregular en Safari/iOS. Así la foto SIEMPRE
+   sale con el filtro que el invitado eligió, en cualquier navegador.
+   Cada matriz es [r,g,b,offset] × 3 filas (12 valores). Trabaja en 0–255.        */
+const IDENTITY_M = [1,0,0,0, 0,1,0,0, 0,0,1,0];
+
+function mulMatrix(A, B) {           // aplica B y luego A  (resultado = A·B)
+    const R = new Array(12);
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            R[i*4+j] = A[i*4]*B[j] + A[i*4+1]*B[4+j] + A[i*4+2]*B[8+j];
+        }
+        R[i*4+3] = A[i*4]*B[3] + A[i*4+1]*B[7] + A[i*4+2]*B[11] + A[i*4+3];
+    }
+    return R;
+}
+function blendMatrix(a, M) {         // mezcla identidad·(1-a) + M·a
+    return M.map((v, i) => IDENTITY_M[i] * (1 - a) + v * a);
+}
+function grayscaleM(a) {
+    const L = [0.2126, 0.7152, 0.0722, 0];
+    return blendMatrix(a, [...L, ...L, ...L]);
+}
+function sepiaM(a) {
+    return blendMatrix(a, [
+        0.393, 0.769, 0.189, 0,
+        0.349, 0.686, 0.168, 0,
+        0.272, 0.534, 0.131, 0
+    ]);
+}
+function saturateM(s) {
+    return [
+        0.213 + 0.787*s, 0.715 - 0.715*s, 0.072 - 0.072*s, 0,
+        0.213 - 0.213*s, 0.715 + 0.285*s, 0.072 - 0.072*s, 0,
+        0.213 - 0.213*s, 0.715 - 0.715*s, 0.072 + 0.928*s, 0
+    ];
+}
+function hueRotateM(deg) {
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [
+        0.213 + c*0.787 - s*0.213, 0.715 - c*0.715 - s*0.715, 0.072 - c*0.072 + s*0.928, 0,
+        0.213 - c*0.213 + s*0.143, 0.715 + c*0.285 + s*0.140, 0.072 - c*0.072 - s*0.283, 0,
+        0.213 - c*0.213 - s*0.787, 0.715 - c*0.715 + s*0.715, 0.072 + c*0.928 + s*0.072, 0
+    ];
+}
+function contrastM(c) {
+    const o = (0.5 - 0.5*c) * 255;
+    return [c,0,0,o, 0,c,0,o, 0,0,c,o];
+}
+
+const FILTER_MATRICES = {
+    bw:      grayscaleM(1),
+    sepia:   sepiaM(1),
+    vintage: mulMatrix(saturateM(1.2), mulMatrix(contrastM(1.2), sepiaM(0.5))),
+    warm:    mulMatrix(saturateM(1.5), mulMatrix(hueRotateM(-30), sepiaM(0.3))),
+    cool:    mulMatrix(saturateM(1.2), hueRotateM(180))
+};
+
+function applyColorMatrix(imageData, m) {
+    const d = imageData.data;
+    for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        d[i]   = Math.min(255, Math.max(0, m[0]*r  + m[1]*g  + m[2]*b  + m[3]));
+        d[i+1] = Math.min(255, Math.max(0, m[4]*r  + m[5]*g  + m[6]*b  + m[7]));
+        d[i+2] = Math.min(255, Math.max(0, m[8]*r  + m[9]*g  + m[10]*b + m[11]));
+    }
+}
+
+// Captura un frame del video recortado al aspecto del modo (mismo encuadre que
+// la guía en pantalla) y aplica espejo + filtro. Devuelve un JPEG de alta calidad.
+function captureFrame() {
     const canvas = document.getElementById('snapshot');
     if (!canvas || !video || !video.videoWidth) return null;
 
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    canvas.width  = w;
-    canvas.height = h;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const ta = MODE_ASPECT[state.mode] || (vw / vh);
 
+    // Recorte centrado al aspecto objetivo, a resolución completa
+    let sw, sh, sx, sy;
+    if (vw / vh > ta) { sh = vh; sw = Math.round(vh * ta); sx = Math.round((vw - sw) / 2); sy = 0; }
+    else              { sw = vw; sh = Math.round(vw / ta); sx = 0; sy = Math.round((vh - sh) / 2); }
+
+    canvas.width  = sw;
+    canvas.height = sh;
     const ctx = canvas.getContext('2d');
 
     // Volteo horizontal — el video tiene scaleX(-1) en CSS, así que reproducimos eso
     ctx.save();
-    ctx.translate(w, 0);
+    ctx.translate(sw, 0);
     ctx.scale(-1, 1);
-    ctx.filter = video.style.filter || 'none';
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
     ctx.restore();
-    ctx.filter = 'none';
 
-    // Marco opcional (solo Retrato)
-    if (applyFrameBorder && state.frame !== 'none') {
-        const frameDefs = {
-            classic: { lw: Math.round(w * 0.026), color: '#ffffff' },
-            elegant: { lw: Math.round(w * 0.011), color: '#E5D3B3' },
-            minimal: { lw: Math.round(w * 0.005), color: '#000000' }
-        };
-        const f = frameDefs[state.frame];
-        if (f) {
-            ctx.lineWidth   = f.lw;
-            ctx.strokeStyle = f.color;
-            ctx.strokeRect(f.lw / 2, f.lw / 2, w - f.lw, h - f.lw);
-        }
+    // Filtro determinista sobre los pixeles (sin depender de ctx.filter)
+    const m = FILTER_MATRICES[state.filter];
+    if (m) {
+        const id = ctx.getImageData(0, 0, sw, sh);
+        applyColorMatrix(id, m);
+        ctx.putImageData(id, 0, 0);
     }
 
-    return canvas.toDataURL('image/png', 0.92);
+    return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
 }
 
 /* ==========================================================================
@@ -385,15 +649,18 @@ function roundedRectPath(ctx, x, y, w, h, r) {
 }
 
 /* ==========================================================================
-   COMPOSICIÓN — ROLLO (tira de 4 fotos)
+   COMPOSICIÓN — TIRA DE PELÍCULA (1, 2 o 4 fotos)
+   Todos los modos usan este estilo de celuloide; la altura se adapta al
+   número de fotos capturadas.
    ========================================================================== */
-async function composeRollo(frames) {
+async function composeFilmstrip(frames) {
+    const n = frames.length;
     const PW = 600, PH = 450;       // slots 4:3 — coincide con cámaras frontales
     const RAIL = 46;                // rieles laterales con perforaciones
     const GAP = 16;
     const TOP = 58, FOOTER = 118;
     const cw = PW + RAIL * 2;
-    const ch = TOP + PH * 4 + GAP * 3 + FOOTER;
+    const ch = TOP + PH * n + GAP * (n - 1) + FOOTER;
 
     const c = document.createElement('canvas');
     c.width  = cw;
@@ -418,11 +685,11 @@ async function composeRollo(frames) {
         ctx.fill();
     }
 
-    // Marca superior estilo "edge print" de película
+    // Marca superior — título del evento
     ctx.fillStyle = 'rgba(201, 169, 110, 0.55)';
-    ctx.font = '300 15px "Outfit", system-ui, sans-serif';
+    ctx.font = '400 17px "Cormorant Garamond", Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText('P H O T O  B O O T H', cw / 2, TOP / 2 + 6);
+    ctx.fillText('Matamoro\'s Wedding', cw / 2, TOP / 2 + 6);
 
     // Fotos con crop centrado (sin estirar) y borde fino
     for (let i = 0; i < frames.length; i++) {
@@ -455,47 +722,9 @@ async function composeRollo(frames) {
     ctx.fillText('Angel & Clara', cw / 2, oy + 46);
     ctx.fillStyle = 'rgba(245, 230, 211, 0.45)';
     ctx.font = '300 14px "Outfit", system-ui, sans-serif';
-    ctx.fillText('16 · 07 · 2026', cw / 2, oy + 72);
+    ctx.fillText('07 · 16 · 2026', cw / 2, oy + 72);
 
-    return c.toDataURL('image/png');
-}
-
-/* ==========================================================================
-   COMPOSICIÓN — DÍPTICO (2 fotos lado a lado)
-   ========================================================================== */
-async function composeDiptych(frames) {
-    const PW = 640, PH = 480;       // slots 4:3 — sin distorsión
-    const PAD = 30, GAP = 18;
-    const FOOTER = 72;
-    const cw = PW * 2 + GAP + PAD * 2;
-    const ch = PAD + PH + FOOTER;
-
-    const c = document.createElement('canvas');
-    c.width  = cw;
-    c.height = ch;
-    const ctx = c.getContext('2d');
-
-    // Fondo crema (paspartú)
-    ctx.fillStyle = '#F5E6D3';
-    ctx.fillRect(0, 0, cw, ch);
-
-    // Fotos con crop centrado (sin estirar) y borde fino
-    for (let i = 0; i < frames.length; i++) {
-        const img = await loadImage(frames[i]);
-        const x = PAD + i * (PW + GAP);
-        drawImageCover(ctx, img, x, PAD, PW, PH);
-        ctx.strokeStyle = 'rgba(80, 60, 40, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, PAD + 0.5, PW - 1, PH - 1);
-    }
-
-    // Texto al pie
-    ctx.fillStyle = 'rgba(80, 60, 40, 0.6)';
-    ctx.font = '400 22px "Cormorant Garamond", Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Angel & Clara · 16 . 07 . 2026', cw / 2, ch - 26);
-
-    return c.toDataURL('image/png');
+    return c.toDataURL('image/jpeg', JPEG_QUALITY);
 }
 
 /* ==========================================================================
@@ -516,8 +745,7 @@ captureBtn?.addEventListener('click', async () => {
         await showCountdown();
         triggerFlash();
 
-        // Solo aplicamos marco de usuario en modo Retrato
-        const frame = captureFrame(state.mode === 'retrato');
+        const frame = captureFrame();
         if (frame) state.capturedFrames.push(frame);
 
         if (i < total) await delay(1400);
@@ -525,48 +753,71 @@ captureBtn?.addEventListener('click', async () => {
 
     setPhotoCounter(0, 0);
 
-    // Componer imagen final según modo
-    if (state.mode === 'rollo' && state.capturedFrames.length === 4) {
-        state.photoDataUrl = await composeRollo(state.capturedFrames);
-    } else if (state.mode === 'pareja' && state.capturedFrames.length >= 2) {
-        state.photoDataUrl = await composeDiptych(state.capturedFrames);
-    } else {
-        state.photoDataUrl = state.capturedFrames[0] || null;
-    }
+    // Tira de película para todos los modos (1, 2 o 4 fotos)
+    state.photoDataUrl = state.capturedFrames.length
+        ? await composeFilmstrip(state.capturedFrames)
+        : null;
 
     state.isCapturing  = false;
     captureBtn.disabled = false;
 
     if (state.photoDataUrl) {
-        // El wrapper del resultado se adapta al modo (paspartú vs. celuloide)
+        // Todos los modos se muestran como tira de película (sin paspartú)
         const wrapper = document.querySelector('.result-preview-wrapper');
-        if (wrapper) {
-            wrapper.classList.remove('mode-retrato', 'mode-pareja', 'mode-rollo');
-            wrapper.classList.add(`mode-${state.mode}`);
-        }
+        if (wrapper) wrapper.classList.add('mode-rollo');
         document.getElementById('result-image').src = state.photoDataUrl;
         navigateTo('result');
     } else {
-        showToast('Error al capturar la fotografía.', 'error');
+        showToast(t('result.error'), 'error');
     }
 });
 
 /* ==========================================================================
    PANTALLA DE RESULTADO
    ========================================================================== */
-function downloadPhoto() {
+// Convierte un data URL a Blob de forma síncrona (preserva el gesto del usuario
+// que necesita navigator.share en iOS)
+function dataURLtoBlob(dataUrl) {
+    const [head, b64] = dataUrl.split(',');
+    const mime = (head.match(/:(.*?);/) || [, 'image/jpeg'])[1];
+    const bin  = atob(b64);
+    const arr  = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+}
+
+// Guarda la foto. En iOS/Android usa el menú nativo de compartir (permite
+// "Guardar en Fotos"); en escritorio cae a una descarga clásica.
+// Devuelve 'shared' | 'downloaded' | false
+async function savePhoto() {
     if (!state.photoDataUrl) return false;
+    const blob = dataURLtoBlob(state.photoDataUrl);
+    const file = new File([blob], `Angel_Clara_${Date.now()}.jpg`, { type: blob.type });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+            await navigator.share({ files: [file], title: 'Angel & Clara' });
+            return 'shared';
+        } catch (err) {
+            if (err && err.name === 'AbortError') return false; // el usuario canceló
+            // cualquier otro error → caemos a la descarga clásica
+        }
+    }
+
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href     = state.photoDataUrl;
-    a.download = `Angel_Clara_${Date.now()}.png`;
+    a.href = url;
+    a.download = file.name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    return true;
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return 'downloaded';
 }
 
-document.getElementById('btn-download')?.addEventListener('click', () => {
-    if (downloadPhoto()) showToast('Foto guardada en tu dispositivo.', 'success');
+document.getElementById('btn-download')?.addEventListener('click', async () => {
+    const result = await savePhoto();
+    if (result === 'downloaded') showToast(t('result.saved'), 'success');
 });
 
 document.getElementById('btn-save-send')?.addEventListener('click', () => {
@@ -594,14 +845,14 @@ document.getElementById('btn-send-email')?.addEventListener('click', () => {
     const btnSend = document.getElementById('btn-send-email');
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showToast('Ingresa un correo electrónico válido.', 'error');
+        showToast(t('modal.invalid'), 'error');
         return;
     }
 
-    // Descarga inmediata en el dispositivo
-    downloadPhoto();
+    // Guarda inmediatamente en el dispositivo (Fase 2 conectará el envío real)
+    savePhoto();
 
-    if (status)  status.textContent = 'Enviando...';
+    if (status)  status.textContent = t('modal.sending');
     if (btnSend) btnSend.disabled = true;
 
     // Simular llamada al API de email
@@ -610,11 +861,77 @@ document.getElementById('btn-send-email')?.addEventListener('click', () => {
         if (btnSend) btnSend.disabled = false;
         if (input)   input.value = '';
         document.getElementById('email-modal').style.display = 'none';
-        showToast('¡Foto guardada y correo enviado!', 'success');
+        showToast(t('modal.success'), 'success');
     }, 1600);
 });
 
 /* ==========================================================================
+   SELECTOR DE IDIOMA
+   ========================================================================== */
+document.querySelectorAll('[data-lang]').forEach(btn => {
+    btn.addEventListener('click', () => changeLanguage(btn.dataset.lang));
+});
+
+/* ==========================================================================
+   iOS PWA INSTALL BANNER
+   ========================================================================== */
+function showIOSInstallBanner() {
+    const banner = document.getElementById('pwa-ios-banner');
+    if (!banner) return;
+
+    // Only show on iOS Safari when NOT running as standalone PWA
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS || isStandalone()) {
+        banner.style.display = 'none';
+        return;
+    }
+
+    // Check if dismissed before
+    try {
+        if (localStorage.getItem('pb-pwa-dismissed')) {
+            banner.style.display = 'none';
+            return;
+        }
+    } catch (_) {}
+
+    banner.style.display = 'flex';
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => banner.classList.add('visible'));
+    });
+}
+
+document.getElementById('btn-pwa-dismiss')?.addEventListener('click', () => {
+    const banner = document.getElementById('pwa-ios-banner');
+    if (banner) {
+        banner.classList.remove('visible');
+        setTimeout(() => { banner.style.display = 'none'; }, 400);
+    }
+    try { localStorage.setItem('pb-pwa-dismissed', '1'); } catch (_) {}
+});
+
+/* ==========================================================================
+   SERVICE WORKER
+   ========================================================================== */
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.warn('SW registration failed:', err);
+        });
+    }
+}
+
+/* ==========================================================================
    INIT
    ========================================================================== */
-window.addEventListener('DOMContentLoaded', () => navigateTo('landing'));
+window.addEventListener('DOMContentLoaded', () => {
+    // Restore saved language or detect from browser
+    const saved = (() => { try { return localStorage.getItem('pb-lang'); } catch (_) { return null; } })();
+    const browserLang = (navigator.language || '').slice(0, 2);
+    state.lang = saved || (browserLang === 'en' ? 'en' : 'es');
+    applyTranslations();
+
+    registerServiceWorker();
+    navigateTo('landing');
+    showIOSInstallBanner();
+});

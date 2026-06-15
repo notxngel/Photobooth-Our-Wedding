@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
-    <meta name="description" content="Photo Booth premium para la boda de Angel & Clara — 16 de Julio, 2026">
+    <meta name="description" content="Photo Booth premium for Matamoro's Wedding — 07/16/2026">
     <meta name="theme-color" content="#0F0C09">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Photo Booth">
-    <title>Angel & Clara — Photo Booth</title>
+    <meta name="apple-mobile-web-app-title" content="Matamoro's Wedding">
+    <title>Matamoro's Wedding — Photo Booth</title>
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -30,6 +30,11 @@
     ══════════════════════════════════════════════ -->
     <div id="landing" class="screen active">
         <canvas id="particles-canvas" aria-hidden="true"></canvas>
+        <!-- Language selector (landing) -->
+        <div class="lang-selector lang-selector--landing" role="group" aria-label="Language">
+            <button class="lang-btn active" data-lang="es" aria-pressed="true">ES</button>
+            <button class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        </div>
         <div class="landing-container">
             <div class="landing-content">
                 <div class="landing-ornament" aria-hidden="true">
@@ -42,7 +47,7 @@
                     </svg>
                 </div>
                 <h1 class="landing-title">Angel <span class="landing-ampersand">&amp;</span> Clara</h1>
-                <p class="landing-date">16 · 07 · 26</p>
+                <p class="landing-date" data-i18n="landing.date">07 · 16 · 26</p>
                 <div class="landing-ornament-sm" aria-hidden="true">
                     <svg viewBox="0 0 90 10" xmlns="http://www.w3.org/2000/svg">
                         <line x1="0" y1="5" x2="35" y2="5" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
@@ -51,11 +56,11 @@
                     </svg>
                 </div>
                 <div class="landing-subtitle-wrapper">
-                    <p class="landing-subtitle"><em>Un momento capturado,</em></p>
-                    <p class="landing-subtitle"><em>una memoria eterna</em></p>
+                    <p class="landing-subtitle"><em data-i18n="landing.subtitle1">Un momento capturado,</em></p>
+                    <p class="landing-subtitle"><em data-i18n="landing.subtitle2">una memoria eterna</em></p>
                 </div>
                 <button id="btn-start" class="btn btn-outline" aria-label="Ingresar al photo booth">
-                    Comenzar Experiencia
+                    <span data-i18n="landing.cta">Comenzar Experiencia</span>
                 </button>
             </div>
         </div>
@@ -72,8 +77,11 @@
                         <path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
-                <h2>Sesión</h2>
-                <div style="width:48px;"></div>
+                <h2 data-i18n="menu.title">Sesión</h2>
+                <div class="lang-selector lang-selector--menu" role="group" aria-label="Language">
+                    <button class="lang-btn active" data-lang="es" aria-pressed="true">ES</button>
+                    <button class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+                </div>
             </header>
 
             <div class="modes-grid" role="radiogroup" aria-label="Tipo de fotografía">
@@ -88,8 +96,8 @@
                         </svg>
                     </div>
                     <div class="mode-card-text">
-                        <h3>Retrato</h3>
-                        <p>El instante perfecto</p>
+                        <h3 data-i18n="menu.retrato">Retrato</h3>
+                        <p data-i18n="menu.retrato.desc">El instante perfecto</p>
                     </div>
                     <div class="mode-card-badge">×1</div>
                 </div>
@@ -103,8 +111,8 @@
                         </svg>
                     </div>
                     <div class="mode-card-text">
-                        <h3>Díptico</h3>
-                        <p>Dos fotos, un recuerdo</p>
+                        <h3 data-i18n="menu.diptico">Díptico</h3>
+                        <p data-i18n="menu.diptico.desc">Dos fotos, un recuerdo</p>
                     </div>
                     <div class="mode-card-badge">×2</div>
                 </div>
@@ -125,8 +133,8 @@
                         </svg>
                     </div>
                     <div class="mode-card-text">
-                        <h3>Rollo</h3>
-                        <p>Tira clásica de cuatro</p>
+                        <h3 data-i18n="menu.rollo">Rollo</h3>
+                        <p data-i18n="menu.rollo.desc">Tira clásica de cuatro</p>
                     </div>
                     <div class="mode-card-badge">×4</div>
                 </div>
@@ -135,7 +143,7 @@
 
             <div class="action-footer">
                 <button id="btn-start-camera" class="btn btn-primary btn-full" aria-label="Abrir cámara">
-                    Continuar a la Cámara
+                    <span data-i18n="menu.continue">Continuar a la Cámara</span>
                 </button>
             </div>
         </div>
@@ -151,9 +159,23 @@
             <div class="camera-view">
                 <video id="player" autoplay playsinline muted aria-label="Cámara en vivo"></video>
                 <canvas id="snapshot" style="display:none"></canvas>
+                <div id="frame-guide" class="frame-guide" aria-hidden="true"></div>
                 <div id="countdown" class="countdown" aria-live="assertive"></div>
                 <div id="flash" class="flash"></div>
                 <div id="photo-counter" class="photo-counter"></div>
+            </div>
+
+            <!-- Overlay de error de cámara (permiso denegado / sin soporte) -->
+            <div id="camera-error" class="camera-error" style="display:none" role="alert">
+                <div class="camera-error-card">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                    <p class="camera-error-title" data-i18n="booth.cam.title">No pudimos acceder a la cámara</p>
+                    <p id="camera-error-text" class="camera-error-text" data-i18n="booth.cam.text">Revisa que diste permiso de cámara en tu navegador.</p>
+                    <button id="btn-retry-camera" class="btn btn-outline"><span data-i18n="booth.retry">Reintentar</span></button>
+                </div>
             </div>
 
             <!-- Barra superior flotante -->
@@ -188,8 +210,8 @@
     <div id="result" class="screen" role="main">
         <div class="screen-container result-layout">
             <header class="screen-header result-header">
-                <h2>El Resultado</h2>
-                <p class="subtitle">Tu momento ha sido capturado</p>
+                <h2 data-i18n="result.title">El Resultado</h2>
+                <p class="subtitle" data-i18n="result.subtitle">Tu momento ha sido capturado</p>
             </header>
 
             <div class="result-preview-wrapper">
@@ -198,13 +220,13 @@
 
             <div class="result-actions">
                 <button id="btn-download" class="btn btn-primary btn-full" aria-label="Descargar fotografía">
-                    Descargar
+                    <span data-i18n="result.download">Descargar</span>
                 </button>
                 <button id="btn-save-send" class="btn btn-outline btn-full" aria-label="Enviar fotografía por correo">
-                    Enviar por Correo
+                    <span data-i18n="result.email">Enviar por Correo</span>
                 </button>
                 <button id="btn-retake-result" class="btn btn-text btn-full" aria-label="Nueva sesión">
-                    Nueva Sesión
+                    <span data-i18n="result.retake">Nueva Sesión</span>
                 </button>
             </div>
         </div>
@@ -217,7 +239,7 @@
         <div class="settings-backdrop" id="settings-backdrop"></div>
         <div class="settings-card">
             <div class="settings-card-header">
-                <span class="settings-card-title">Ajustes</span>
+                <span class="settings-card-title" data-i18n="booth.settings">Ajustes</span>
                 <button id="btn-close-settings" class="btn-icon" aria-label="Cerrar ajustes">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -226,7 +248,7 @@
             </div>
 
             <div class="config-section">
-                <h4 class="config-title">Filtros</h4>
+                <h4 class="config-title" data-i18n="booth.filters">Filtros</h4>
                 <div class="options-scroll" role="group">
                     <button class="pill-btn active" data-filter="color" aria-pressed="true">Color</button>
                     <button class="pill-btn" data-filter="bw" aria-pressed="false">B/N</button>
@@ -237,15 +259,6 @@
                 </div>
             </div>
 
-            <div class="config-section">
-                <h4 class="config-title">Marco</h4>
-                <div class="options-scroll" role="group">
-                    <button class="pill-btn active" data-frame="classic" aria-pressed="true">Clásico</button>
-                    <button class="pill-btn" data-frame="elegant" aria-pressed="false">Elegante</button>
-                    <button class="pill-btn" data-frame="minimal" aria-pressed="false">Editorial</button>
-                    <button class="pill-btn" data-frame="none" aria-pressed="false">Sin Marco</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -261,18 +274,27 @@
             </button>
 
             <div class="modal-header">
-                <h3>Guardar &amp; Enviar</h3>
-                <p>La foto se descargará en tu dispositivo y te la enviaremos por correo.</p>
+                <h3 data-i18n="modal.title">Guardar &amp; Enviar</h3>
+                <p data-i18n="modal.desc">La foto se descargará en tu dispositivo y te la enviaremos por correo.</p>
             </div>
 
             <div class="modal-body">
-                <input type="email" id="email-input" class="input-line" placeholder="tu@correo.com" autocomplete="email" required>
+                <input type="email" id="email-input" class="input-line" placeholder="tu@correo.com" data-i18n="modal.placeholder" autocomplete="email" required>
                 <div id="email-status" class="status-msg"></div>
             </div>
 
             <div class="modal-footer">
-                <button id="btn-send-email" class="btn btn-primary btn-full">Guardar y Enviar</button>
+                <button id="btn-send-email" class="btn btn-primary btn-full"><span data-i18n="modal.send">Guardar y Enviar</span></button>
             </div>
+        </div>
+    </div>
+
+    <!-- iOS PWA Install Banner -->
+    <div id="pwa-ios-banner" class="pwa-ios-banner" style="display:none" role="alert">
+        <div class="pwa-ios-card">
+            <p class="pwa-ios-title" data-i18n="pwa.ios.title">Experiencia completa</p>
+            <p class="pwa-ios-text" data-i18n="pwa.ios.text" data-i18n-html>Pulsa <strong>Compartir</strong> <span class="pwa-share-icon">⬆</span> y elige <strong>"Añadir a pantalla de inicio"</strong> para usar sin barras de navegación.</p>
+            <button id="btn-pwa-dismiss" class="btn btn-outline btn-sm" data-i18n="pwa.ios.dismiss">Entendido</button>
         </div>
     </div>
 
