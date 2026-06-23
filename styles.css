@@ -246,6 +246,14 @@ ul, ol { list-style: none; }
     text-shadow: 0 0 100px rgba(201,169,110,0.18);
 }
 
+.landing-couple {
+    font-family: var(--font-script);
+    font-size: clamp(1.9rem, 6vw, 3.1rem);
+    line-height: 1;
+    color: var(--color-accent);
+    margin-top: -0.85rem;
+}
+
 .landing-ampersand {
     font-family: var(--font-script);
     color: var(--color-accent);

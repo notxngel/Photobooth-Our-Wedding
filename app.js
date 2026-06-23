@@ -672,7 +672,7 @@ async function composeFilmstrip(frames) {
     const PW = 600, PH = 450;       // slots 4:3 — coincide con cámaras frontales
     const RAIL = 46;                // rieles laterales con perforaciones
     const GAP = 16;
-    const TOP = 58, FOOTER = 118;
+    const TOP = 58, FOOTER = 150;
     const cw = PW + RAIL * 2;
     const ch = TOP + PH * n + GAP * (n - 1) + FOOTER;
 
@@ -731,12 +731,18 @@ async function composeFilmstrip(frames) {
     ctx.closePath();
     ctx.stroke();
 
+    // Título principal del evento
     ctx.fillStyle = '#C9A96E';
     ctx.font = '400 34px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText('Angel & Clara', cw / 2, oy + 46);
+    ctx.fillText('Matamoro\'s Wedding', cw / 2, oy + 46);
+    // Subtítulo — nombres de los novios
+    ctx.fillStyle = 'rgba(245, 230, 211, 0.7)';
+    ctx.font = 'italic 400 21px "Cormorant Garamond", Georgia, serif';
+    ctx.fillText('Angel & Clara', cw / 2, oy + 74);
+    // Fecha
     ctx.fillStyle = 'rgba(245, 230, 211, 0.45)';
     ctx.font = '300 14px "Outfit", system-ui, sans-serif';
-    ctx.fillText('07 · 16 · 2026', cw / 2, oy + 72);
+    ctx.fillText('07 · 16 · 2026', cw / 2, oy + 98);
 
     return c.toDataURL('image/jpeg', JPEG_QUALITY);
 }
