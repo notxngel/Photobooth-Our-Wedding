@@ -16,7 +16,6 @@ const state = {
 };
 
 const PHOTO_COUNTS = { retrato: 1, pareja: 2, rollo: 4 };
-const MODE_LABELS  = { retrato: 'Retrato', pareja: 'Díptico', rollo: 'Rollo' };
 
 // Aspecto (ancho/alto) del recorte capturado. Todos los modos usan 4:3 para
 // que cada foto encaje sin distorsión en las celdas de la tira de película.
@@ -202,50 +201,57 @@ function showToast(message, type = 'info') {
    ========================================================================== */
 const canvasParticles = document.getElementById('particles-canvas');
 let particlesAnimationId = null;
+let particlesReady = false;          // estado creado una sola vez (canvas, listener, partículas)
+let particlesWidth = 0, particlesHeight = 0;
+const particles = [];
 
+function resizeParticles() {
+    if (!canvasParticles) return;
+    particlesWidth  = canvasParticles.width  = window.innerWidth;
+    particlesHeight = canvasParticles.height = window.innerHeight;
+}
+
+function drawParticles(ctx) {
+    ctx.clearRect(0, 0, particlesWidth, particlesHeight);
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > particlesWidth)  p.vx *= -1;
+        if (p.y < 0 || p.y > particlesHeight) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+        ctx.fill();
+    });
+    particlesAnimationId = requestAnimationFrame(() => drawParticles(ctx));
+}
+
+// Inicializa una sola vez (listener + partículas) y reanuda el bucle en cada visita.
 function initParticles() {
     if (!canvasParticles) return;
     const ctx = canvasParticles.getContext('2d');
-    let width, height;
-    const particles = [];
 
-    function resize() {
-        width = canvasParticles.width = window.innerWidth;
-        height = canvasParticles.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    for (let i = 0; i < 40; i++) {
-        particles.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            r: Math.random() * 1.5 + 0.4,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4,
-            a: Math.random() * 0.6 + 0.2
-        });
+    if (!particlesReady) {
+        window.addEventListener('resize', resizeParticles);
+        resizeParticles();
+        for (let i = 0; i < 40; i++) {
+            particles.push({
+                x: Math.random() * particlesWidth,
+                y: Math.random() * particlesHeight,
+                r: Math.random() * 1.5 + 0.4,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                a: Math.random() * 0.6 + 0.2
+            });
+        }
+        particlesReady = true;
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
-        particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            if (p.x < 0 || p.x > width)  p.vx *= -1;
-            if (p.y < 0 || p.y > height) p.vy *= -1;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,255,255,${p.a})`;
-            ctx.fill();
-        });
-        particlesAnimationId = requestAnimationFrame(draw);
-    }
-    draw();
+    if (particlesAnimationId === null) drawParticles(ctx);   // evita bucles duplicados
 }
 
 function stopParticles() {
-    if (particlesAnimationId) {
+    if (particlesAnimationId !== null) {
         cancelAnimationFrame(particlesAnimationId);
         particlesAnimationId = null;
     }
@@ -452,6 +458,14 @@ function closeSettingsImmediate() {
 document.getElementById('btn-settings')?.addEventListener('click', openSettings);
 document.getElementById('btn-close-settings')?.addEventListener('click', closeSettings);
 document.getElementById('settings-backdrop')?.addEventListener('click', closeSettings);
+
+// Cerrar con la tecla Escape el overlay que esté abierto (modal de correo o ajustes)
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const modal = document.getElementById('email-modal');
+    if (modal && modal.style.display === 'flex') { closeEmailModal(); return; }
+    if (settingsSheet && settingsSheet.classList.contains('open')) closeSettings();
+});
 
 // Filtros
 document.querySelectorAll('[data-filter]').forEach(btn => {
@@ -820,9 +834,33 @@ document.getElementById('btn-download')?.addEventListener('click', async () => {
     if (result === 'downloaded') showToast(t('result.saved'), 'success');
 });
 
-document.getElementById('btn-save-send')?.addEventListener('click', () => {
+// Recuerda el elemento que abrió el modal para devolverle el foco al cerrar
+let lastFocusedBeforeModal = null;
+
+function openEmailModal() {
     const modal = document.getElementById('email-modal');
-    if (modal) modal.style.display = 'flex';
+    if (!modal) return;
+    lastFocusedBeforeModal = document.activeElement;
+    modal.style.display = 'flex';
+    const input = document.getElementById('email-input');
+    if (input) requestAnimationFrame(() => input.focus());
+}
+
+function closeEmailModal() {
+    const modal = document.getElementById('email-modal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
+        lastFocusedBeforeModal.focus();
+        lastFocusedBeforeModal = null;
+    }
+}
+
+document.getElementById('btn-save-send')?.addEventListener('click', openEmailModal);
+
+// Cerrar el modal al tocar el fondo oscuro (fuera de la tarjeta)
+document.getElementById('email-modal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeEmailModal();
 });
 
 document.getElementById('btn-retake-result')?.addEventListener('click', () => {
@@ -834,9 +872,7 @@ document.getElementById('btn-retake-result')?.addEventListener('click', () => {
 /* ==========================================================================
    MODAL — GUARDAR & ENVIAR
    ========================================================================== */
-document.getElementById('btn-close-modal')?.addEventListener('click', () => {
-    document.getElementById('email-modal').style.display = 'none';
-});
+document.getElementById('btn-close-modal')?.addEventListener('click', closeEmailModal);
 
 document.getElementById('btn-send-email')?.addEventListener('click', () => {
     const input   = document.getElementById('email-input');
@@ -860,7 +896,7 @@ document.getElementById('btn-send-email')?.addEventListener('click', () => {
         if (status)  status.textContent = '';
         if (btnSend) btnSend.disabled = false;
         if (input)   input.value = '';
-        document.getElementById('email-modal').style.display = 'none';
+        closeEmailModal();
         showToast(t('modal.success'), 'success');
     }, 1600);
 });

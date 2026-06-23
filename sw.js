@@ -1,10 +1,10 @@
 /**
  * sw.js — Service Worker for Matamoro's Wedding Photo Booth
  * Enables PWA install (standalone mode = no browser chrome).
- * Cache-first for static assets; network-first for everything else.
+ * Cache-first for static assets y para las fuentes de Google; el resto pasa a la red.
  */
 
-const CACHE_NAME = 'photobooth-v1';
+const CACHE_NAME = 'photobooth-v2';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -15,11 +15,18 @@ const STATIC_ASSETS = [
     './icons/icon-512.png'
 ];
 
-/* ── Install: pre-cache shell ─────────────────────────────────────────── */
+// Orígenes de las fuentes (CSS + archivos woff2). Se cachean en runtime: son
+// inmutables y permiten que la tira conserve su tipografía sin conexión.
+const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+
+/* ── Install: pre-cache shell (tolerante a recursos faltantes) ─────────── */
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(STATIC_ASSETS))
+            // Cachear cada recurso por separado: un 404 puntual no aborta toda la instalación
+            .then(cache => Promise.allSettled(
+                STATIC_ASSETS.map(asset => cache.add(asset))
+            ))
             .then(() => self.skipWaiting())
     );
 });
@@ -35,16 +42,34 @@ self.addEventListener('activate', event => {
     );
 });
 
-/* ── Fetch: cache-first for static, network-first for the rest ────────── */
+/* ── Fetch ────────────────────────────────────────────────────────────── */
 self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET') return;
     const url = new URL(event.request.url);
 
-    // Only handle same-origin requests
+    // Fuentes de Google: cache-first (recursos inmutables y versionados)
+    if (FONT_HOSTS.includes(url.hostname)) {
+        event.respondWith(
+            caches.match(event.request).then(cached => {
+                if (cached) return cached;
+                return fetch(event.request).then(response => {
+                    if (response && (response.ok || response.type === 'opaque')) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    }
+                    return response;
+                });
+            })
+        );
+        return;
+    }
+
+    // Solo manejamos el resto si es del mismo origen
     if (url.origin !== location.origin) return;
 
+    // Mismo origen: stale-while-revalidate
     event.respondWith(
         caches.match(event.request).then(cached => {
-            // Return cached version while fetching update in background
             const fetchPromise = fetch(event.request).then(response => {
                 if (response && response.status === 200) {
                     const clone = response.clone();
