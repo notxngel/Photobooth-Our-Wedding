@@ -285,6 +285,20 @@ ul, ol { list-style: none; }
     line-height: 1.8;
 }
 
+.landing-gallery-link {
+    margin-top: -0.8rem;
+    color: rgba(245,230,211,0.6);
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(201,169,110,0.4);
+    padding-bottom: 3px;
+    transition: color var(--transition-fast, 0.2s);
+}
+.landing-gallery-link:hover,
+.landing-gallery-link:focus-visible { color: var(--color-accent); }
+
 /* ==========================================================================
    MENÚ DE MODOS
    ========================================================================== */

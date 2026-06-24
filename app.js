@@ -41,6 +41,7 @@ const TRANSLATIONS = {
         'landing.subtitle1':    'Un momento capturado,',
         'landing.subtitle2':    'una memoria eterna',
         'landing.cta':          'Comenzar Experiencia',
+        'landing.gallery':      'Ver la galería',
         'landing.date':         '07 · 16 · 26',
         // Menu
         'menu.title':           'Sesión',
@@ -91,6 +92,7 @@ const TRANSLATIONS = {
         'landing.subtitle1':    'A moment captured,',
         'landing.subtitle2':    'a memory forever',
         'landing.cta':          'Start Experience',
+        'landing.gallery':      'View the gallery',
         'landing.date':         '07 · 16 · 26',
         // Menu
         'menu.title':           'Session',
