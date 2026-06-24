@@ -20,7 +20,7 @@ El **correo automático** con enlace (Resend) es la **Fase 2** y se añade despu
 ## Paso 2 — Crear la base de datos y los permisos
 
 1. En el panel del proyecto, menú lateral → **SQL Editor** → **New query**.
-2. Abre el archivo **`supabase-setup.sql`** de este repo, copia **todo** su contenido,
+2. Abre el archivo **`supabase/setup.sql`** de este repo, copia **todo** su contenido,
    pégalo en el editor y pulsa **Run** ▶.
 3. Debe decir *"Success"*. Esto crea el bucket de fotos, la tabla, la galería y los permisos.
 

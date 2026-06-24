@@ -21,7 +21,8 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const ROOT = __dirname;
+// Este script vive en /tools, pero sirve la raíz del proyecto (carpeta padre)
+const ROOT = path.resolve(__dirname, '..');
 const PORT = parseInt(process.env.PORT, 10) || 8443;
 const KEY = path.join(ROOT, 'key.pem');
 const CERT = path.join(ROOT, 'cert.pem');

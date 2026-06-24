@@ -1,5 +1,5 @@
 -- ============================================================================
--- supabase-setup.sql — Photo Booth "Matamoro's Wedding"
+-- supabase/setup.sql — Photo Booth "Matamoro's Wedding"
 -- Ejecuta TODO este script una sola vez en: Supabase → SQL Editor → New query → Run
 -- Crea el bucket de fotos, la tabla, la vista pública de la galería y los
 -- permisos para que la app (clave anon) pueda subir fotos sin exponer correos.
