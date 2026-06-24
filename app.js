@@ -74,7 +74,7 @@ const TRANSLATIONS = {
         'result.gallery':       'Ver la galería',
         // Modal
         'modal.title':          'Guardar Foto',
-        'modal.desc':           'Tu foto se guardará en tu dispositivo y en la galería de la boda. Déjanos tu correo si quieres que te la enviemos.',
+        'modal.desc':           'Tu foto se guardará en la galería de la boda. Déjanos tu correo si quieres que te la enviemos.',
         'modal.placeholder':    'tu@correo.com',
         'modal.send':           'Guardar Foto',
         'modal.invalid':        'Ingresa un correo electrónico válido.',
@@ -125,7 +125,7 @@ const TRANSLATIONS = {
         'result.gallery':       'View the gallery',
         // Modal
         'modal.title':          'Save Photo',
-        'modal.desc':           'Your photo will be saved to your device and to the wedding gallery. Leave your email if you\'d like us to send it to you.',
+        'modal.desc':           'Your photo will be saved to the wedding gallery. Leave your email if you\'d like us to send it to you.',
         'modal.placeholder':    'your@email.com',
         'modal.send':           'Save Photo',
         'modal.invalid':        'Please enter a valid email address.',
@@ -896,6 +896,20 @@ function backendConfig() {
     return ready ? c : null;
 }
 
+// fetch con límite de tiempo: si no responde, lanza un error claro (evita cuelgues).
+async function fetchWithTimeout(url, opts, ms, label) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        return await fetch(url, { ...opts, signal: ctrl.signal });
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error(label + ': sin respuesta en ' + Math.round(ms / 1000) + 's (timeout)');
+        throw new Error(label + ': ' + (e.message || e.name));
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 // Sube el JPEG al Storage de Supabase y registra una fila en la tabla `photos`.
 // Devuelve la URL pública de la imagen.
 async function uploadPhotoToGallery(blob, email) {
@@ -904,18 +918,18 @@ async function uploadPhotoToGallery(blob, email) {
     const name = `Matamoros_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
     const auth = { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` };
 
-    const up = await fetch(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${name}`, {
+    const up = await fetchWithTimeout(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${name}`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'image/jpeg' },
         body: blob
-    });
+    }, 20000, 'Storage');
     if (!up.ok) throw new Error('Storage ' + up.status + ': ' + (await up.text()).slice(0, 140));
 
-    const ins = await fetch(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
+    const ins = await fetchWithTimeout(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
         body: JSON.stringify({ email: email || null, image_path: name })
-    });
+    }, 20000, 'BD');
     if (!ins.ok) throw new Error('BD ' + ins.status + ': ' + (await ins.text()).slice(0, 140));
 
     return `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
@@ -938,16 +952,15 @@ document.getElementById('btn-send-email')?.addEventListener('click', async () =>
     }
     if (!state.photoDataUrl) { showToast(t('result.error'), 'error'); return; }
 
-    // Guarda en el dispositivo (aprovecha el gesto del usuario para navigator.share)
-    savePhoto();
-
-    // Si el backend no está configurado, mantenemos el flujo local
+    // Si el backend no está configurado, modo local: guarda en el dispositivo
     if (!backendConfig()) {
+        savePhoto();
         if (input) input.value = '';
         closeEmailModal();
         showToast(t('modal.success'), 'success');
         return;
     }
+    // Backend configurado → subir a la galería (sin abrir el menú de compartir)
 
     if (status)  status.textContent = t('modal.sending');
     if (btnSend) btnSend.disabled = true;
