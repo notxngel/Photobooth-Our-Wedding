@@ -70,14 +70,17 @@ const TRANSLATIONS = {
         'result.retake':        'Nueva Sesión',
         'result.saved':         'Foto guardada en tu dispositivo.',
         'result.error':         'Error al capturar la fotografía.',
+        'result.gallery':       'Ver la galería',
         // Modal
         'modal.title':          'Guardar Foto',
-        'modal.desc':           'Tu foto se guardará ahora en tu dispositivo. El envío por correo estará disponible muy pronto — déjanos tu correo si quieres recibirla.',
+        'modal.desc':           'Tu foto se guardará en tu dispositivo y en la galería de la boda. Déjanos tu correo si quieres que te la enviemos.',
         'modal.placeholder':    'tu@correo.com',
         'modal.send':           'Guardar Foto',
         'modal.invalid':        'Ingresa un correo electrónico válido.',
         'modal.sending':        'Guardando...',
         'modal.success':        '¡Foto guardada en tu dispositivo!',
+        'modal.success.cloud':  '¡Listo! Tu foto se guardó y aparecerá en la galería.',
+        'modal.uploaderror':    'No se pudo subir la foto. Revisa tu conexión e inténtalo de nuevo.',
         // iOS Install
         'pwa.ios.title':        'Experiencia completa',
         'pwa.ios.text':         'Pulsa <strong>Compartir</strong> <span class="pwa-share-icon">⬆</span> y elige <strong>"Añadir a pantalla de inicio"</strong> para usar sin barras de navegación.',
@@ -117,14 +120,17 @@ const TRANSLATIONS = {
         'result.retake':        'New Session',
         'result.saved':         'Photo saved to your device.',
         'result.error':         'Error capturing the photograph.',
+        'result.gallery':       'View the gallery',
         // Modal
         'modal.title':          'Save Photo',
-        'modal.desc':           'Your photo will be saved to your device now. Email delivery is coming very soon — leave your email if you\'d like to receive it.',
+        'modal.desc':           'Your photo will be saved to your device and to the wedding gallery. Leave your email if you\'d like us to send it to you.',
         'modal.placeholder':    'your@email.com',
         'modal.send':           'Save Photo',
         'modal.invalid':        'Please enter a valid email address.',
         'modal.sending':        'Saving...',
         'modal.success':        'Photo saved to your device!',
+        'modal.success.cloud':  'Done! Your photo was saved and will appear in the gallery.',
+        'modal.uploaderror':    'Could not upload the photo. Check your connection and try again.',
         // iOS Install
         'pwa.ios.title':        'Full experience',
         'pwa.ios.text':         'Tap <strong>Share</strong> <span class="pwa-share-icon">⬆</span> and choose <strong>"Add to Home Screen"</strong> to use without browser bars.',
@@ -876,11 +882,49 @@ document.getElementById('btn-retake-result')?.addEventListener('click', () => {
 });
 
 /* ==========================================================================
+   BACKEND — SUBIDA A LA GALERÍA (Supabase)
+   ========================================================================== */
+// Devuelve la config si está completa (no son los valores de ejemplo); si no,
+// null → la app sigue funcionando en modo local (solo descarga).
+function backendConfig() {
+    const c = window.PB_CONFIG || {};
+    const ready = c.SUPABASE_URL && c.SUPABASE_ANON_KEY &&
+                  !c.SUPABASE_URL.includes('TU-PROYECTO') &&
+                  !c.SUPABASE_ANON_KEY.includes('TU_CLAVE');
+    return ready ? c : null;
+}
+
+// Sube el JPEG al Storage de Supabase y registra una fila en la tabla `photos`.
+// Devuelve la URL pública de la imagen.
+async function uploadPhotoToGallery(blob, email) {
+    const cfg = backendConfig();
+    if (!cfg) return null;
+    const name = `Matamoros_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const auth = { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` };
+
+    const up = await fetch(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${name}`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'image/jpeg' },
+        body: blob
+    });
+    if (!up.ok) throw new Error('storage ' + up.status);
+
+    const ins = await fetch(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ email: email || null, image_path: name })
+    });
+    if (!ins.ok) throw new Error('db ' + ins.status);
+
+    return `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
+}
+
+/* ==========================================================================
    MODAL — GUARDAR & ENVIAR
    ========================================================================== */
 document.getElementById('btn-close-modal')?.addEventListener('click', closeEmailModal);
 
-document.getElementById('btn-send-email')?.addEventListener('click', () => {
+document.getElementById('btn-send-email')?.addEventListener('click', async () => {
     const input   = document.getElementById('email-input');
     const email   = input?.value?.trim();
     const status  = document.getElementById('email-status');
@@ -890,21 +934,35 @@ document.getElementById('btn-send-email')?.addEventListener('click', () => {
         showToast(t('modal.invalid'), 'error');
         return;
     }
+    if (!state.photoDataUrl) { showToast(t('result.error'), 'error'); return; }
 
-    // Guarda inmediatamente en el dispositivo (Fase 2 conectará el envío real)
+    // Guarda en el dispositivo (aprovecha el gesto del usuario para navigator.share)
     savePhoto();
+
+    // Si el backend no está configurado, mantenemos el flujo local
+    if (!backendConfig()) {
+        if (input) input.value = '';
+        closeEmailModal();
+        showToast(t('modal.success'), 'success');
+        return;
+    }
 
     if (status)  status.textContent = t('modal.sending');
     if (btnSend) btnSend.disabled = true;
 
-    // Simular llamada al API de email
-    setTimeout(() => {
+    try {
+        const blob = dataURLtoBlob(state.photoDataUrl);
+        await uploadPhotoToGallery(blob, email);
+        if (input) input.value = '';
+        closeEmailModal();
+        showToast(t('modal.success.cloud'), 'success');
+    } catch (err) {
+        console.error('Upload error:', err);
+        showToast(t('modal.uploaderror'), 'error');
+    } finally {
         if (status)  status.textContent = '';
         if (btnSend) btnSend.disabled = false;
-        if (input)   input.value = '';
-        closeEmailModal();
-        showToast(t('modal.success'), 'success');
-    }, 1600);
+    }
 });
 
 /* ==========================================================================
