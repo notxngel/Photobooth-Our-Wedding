@@ -909,14 +909,14 @@ async function uploadPhotoToGallery(blob, email) {
         headers: { ...auth, 'Content-Type': 'image/jpeg' },
         body: blob
     });
-    if (!up.ok) throw new Error('storage ' + up.status);
+    if (!up.ok) throw new Error('Storage ' + up.status + ': ' + (await up.text()).slice(0, 140));
 
     const ins = await fetch(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
         body: JSON.stringify({ email: email || null, image_path: name })
     });
-    if (!ins.ok) throw new Error('db ' + ins.status);
+    if (!ins.ok) throw new Error('BD ' + ins.status + ': ' + (await ins.text()).slice(0, 140));
 
     return `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
 }
@@ -955,14 +955,15 @@ document.getElementById('btn-send-email')?.addEventListener('click', async () =>
     try {
         const blob = dataURLtoBlob(state.photoDataUrl);
         await uploadPhotoToGallery(blob, email);
-        if (input) input.value = '';
+        if (input)  input.value = '';
+        if (status) status.textContent = '';
         closeEmailModal();
         showToast(t('modal.success.cloud'), 'success');
     } catch (err) {
         console.error('Upload error:', err);
+        if (status) status.textContent = err.message;   // detalle visible para depurar
         showToast(t('modal.uploaderror'), 'error');
     } finally {
-        if (status)  status.textContent = '';
         if (btnSend) btnSend.disabled = false;
     }
 });
