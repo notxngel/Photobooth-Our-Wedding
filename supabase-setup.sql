@@ -21,6 +21,9 @@ create table if not exists public.photos (
 alter table public.photos enable row level security;
 
 -- 2a. Cualquiera (rol anónimo) puede INSERTAR su foto...
+--     Hacen falta DOS cosas: el privilegio (GRANT) y la política (RLS).
+grant insert on public.photos to anon;
+
 drop policy if exists "anon inserta fotos" on public.photos;
 create policy "anon inserta fotos"
     on public.photos for insert
