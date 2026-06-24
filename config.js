@@ -13,7 +13,7 @@
    (descarga en el dispositivo) sin intentar subir nada.
    ========================================================================== */
 window.PB_CONFIG = {
-    SUPABASE_URL:      'https://balfjbuzxenjrwateei.supabase.co',
+    SUPABASE_URL:      'https://bxlfjobuzoxcnjrwaeee.supabase.co',
     SUPABASE_ANON_KEY: 'sb_publishable_8TA9n_xhJ1PzzAJOqBkxIw_UKHNG8O4',
     BUCKET:            'photos'
 };
