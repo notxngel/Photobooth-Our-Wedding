@@ -962,6 +962,7 @@ document.getElementById('btn-send-email')?.addEventListener('click', async () =>
     } catch (err) {
         console.error('Upload error:', err);
         if (status) status.textContent = err.message;   // detalle visible para depurar
+        alert('DEBUG — Error al subir:\n\n' + err.message);   // temporal: para diagnóstico
         showToast(t('modal.uploaderror'), 'error');
     } finally {
         if (btnSend) btnSend.disabled = false;
