@@ -104,9 +104,24 @@ Los invitados **no** pueden borrar fotos (a propósito): solo pueden subir.
 
 ## 🗺️ Próximos pasos (pendientes)
 
+- [x] **Panel de administrador** (`admin.html`) — login y borrado de fotos. Ver abajo.
 - [ ] **Fase 2 — Correo automático**: enviar a cada invitado su foto por correo (Resend).
-- [ ] (Opcional) Botón de **borrar en la app** con contraseña de admin.
 - [ ] (Opcional) **Código QR** para que los invitados abran la app escaneando.
+
+---
+
+## 🔐 Panel de administrador
+
+Página **`admin.html`** (discreta, no enlazada desde la app pública) para que **solo
+los novios** puedan borrar fotos. Los invitados nunca pueden borrar.
+
+**Puesta en marcha (una vez):**
+1. Supabase → **Authentication → Users → Add user**: crea tu usuario admin (correo + contraseña).
+2. Supabase → **Authentication → Providers → Email**: desactiva *"Allow new users to sign up"*.
+3. Supabase → **SQL Editor**: corre **`supabase/admin-setup.sql`** (permisos de borrado del admin).
+
+**Uso:** abre `…/admin.html`, inicia sesión y cada foto tendrá un botón **Borrar**
+(elimina el archivo del Storage y la fila de la base de datos).
 
 ---
 
