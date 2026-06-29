@@ -86,7 +86,7 @@
                 `${cfg.SUPABASE_URL}/rest/v1/photos?select=id,email,image_path,created_at&order=created_at.desc`,
                 { headers: authHeaders() }
             );
-            if (res.status === 401) { logout(); showLogin('Tu sesión expiró. Vuelve a entrar.'); return; }
+            if (res.status === 401 || res.status === 403) { logout(); showLogin('Tu sesión expiró. Vuelve a entrar.'); return; }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const rows = await res.json();
 
@@ -128,17 +128,19 @@
         if (!confirm('¿Borrar esta foto? Esta acción no se puede deshacer.')) return;
         btn.disabled = true; btn.textContent = 'Borrando…';
         try {
-            // 1) borrar el archivo del Storage
-            const delObj = await fetch(`${cfg.SUPABASE_URL}/storage/v1/object/${BUCKET}/${row.image_path}`, {
+            // 1) borrar el archivo del Storage. Si ya no existe (404/400), no es
+            //    fatal: la fila de la BD es la fuente de verdad de la galería.
+            const delObj = await fetch(`${cfg.SUPABASE_URL}/storage/v1/object/${BUCKET}/${encodeURI(row.image_path)}`, {
                 method: 'DELETE', headers: authHeaders()
             });
-            if (delObj.status === 401) { logout(); showLogin('Tu sesión expiró. Vuelve a entrar.'); return; }
-            if (!delObj.ok && delObj.status !== 404) throw new Error('Storage ' + delObj.status);
+            if (delObj.status === 401 || delObj.status === 403) { logout(); showLogin('Tu sesión expiró. Vuelve a entrar.'); return; }
+            if (!delObj.ok && delObj.status !== 404 && delObj.status !== 400) throw new Error('Storage ' + delObj.status);
 
             // 2) borrar la fila de la tabla
             const delRow = await fetch(`${cfg.SUPABASE_URL}/rest/v1/photos?id=eq.${row.id}`, {
                 method: 'DELETE', headers: { ...authHeaders(), Prefer: 'return=minimal' }
             });
+            if (delRow.status === 401 || delRow.status === 403) { logout(); showLogin('Tu sesión expiró. Vuelve a entrar.'); return; }
             if (!delRow.ok) throw new Error('BD ' + delRow.status);
 
             fig.remove();
