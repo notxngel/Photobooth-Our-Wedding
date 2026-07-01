@@ -1,3 +1,6 @@
 # Certificados locales del servidor de desarrollo (no subir)
 key.pem
 cert.pem
+
+# Clave service_role del panel local de admin — NUNCA subir (da acceso total)
+tools/admin-local.config.js
