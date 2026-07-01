@@ -104,24 +104,35 @@ Los invitados **no** pueden borrar fotos (a propósito): solo pueden subir.
 
 ## 🗺️ Próximos pasos (pendientes)
 
-- [x] **Panel de administrador** (`admin.html`) — login y borrado de fotos. Ver abajo.
+- [x] **Panel de administrador local** (`tools/admin-local.html`) — borrar fotos desde tu compu. Ver abajo.
 - [ ] **Fase 2 — Correo automático**: enviar a cada invitado su foto por correo (Resend).
 - [ ] (Opcional) **Código QR** para que los invitados abran la app escaneando.
 
 ---
 
-## 🔐 Panel de administrador
+## 🔐 Panel de administrador (local)
 
-Página **`admin.html`** (discreta, no enlazada desde la app pública) para que **solo
-los novios** puedan borrar fotos. Los invitados nunca pueden borrar.
+Página **`tools/admin-local.html`** que corre **solo en tu computadora** para que
+**solo los novios** puedan borrar fotos. No se despliega ni se enlaza desde la app
+pública. Los invitados nunca pueden borrar.
+
+Usa la clave **`service_role`** de Supabase (acceso total), por eso vive únicamente
+en tu máquina y **no** en el sitio publicado.
 
 **Puesta en marcha (una vez):**
-1. Supabase → **Authentication → Users → Add user**: crea tu usuario admin (correo + contraseña).
-2. Supabase → **Authentication → Providers → Email**: desactiva *"Allow new users to sign up"*.
-3. Supabase → **SQL Editor**: corre **`supabase/admin-setup.sql`** (permisos de borrado del admin).
+1. Copia la plantilla de configuración:
+   `cp tools/admin-local.config.example.js tools/admin-local.config.js`
+2. Supabase → **Project Settings → API**: copia la clave **`service_role`** (la secreta,
+   NO la `anon`) y pégala en `tools/admin-local.config.js`.
+   > ⚠️ Ese archivo está en `.gitignore` — **nunca** lo subas a GitHub ni lo despliegues.
 
-**Uso:** abre `…/admin.html`, inicia sesión y cada foto tendrá un botón **Borrar**
-(elimina el archivo del Storage y la fila de la base de datos).
+**Uso:**
+1. `node tools/dev-server.js`
+2. Abre **`https://localhost:8443/tools/admin-local.html`**
+3. Cada foto tiene un botón **Borrar** (elimina el archivo del Storage y la fila de la
+   base de datos de un clic). El botón **Actualizar** recarga la lista.
+
+La página se niega a funcionar fuera de `localhost` como red de seguridad.
 
 ---
 
