@@ -59,6 +59,10 @@ Tienes dos opciones:
 - La **galería es pública** para quien tenga el enlace (las fotos se ven sin contraseña).
   Es lo normal en una boda; si quieres restringirla, lo vemos.
 - La app **no recopila datos de los invitados** (ni correos ni nombres): solo la foto.
+- Si el **Security Advisor** del dashboard muestra el aviso *"Security Definer
+  View"* sobre `gallery_photos`, corre una vez
+  **`supabase/fix-security-advisor.sql`** (SQL Editor → Run): la galería sigue
+  igual y el aviso desaparece.
 
 ## Fase 2 — Miniaturas y bucket endurecido (ya implementada)
 

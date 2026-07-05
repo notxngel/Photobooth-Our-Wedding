@@ -20,7 +20,10 @@ alter table public.photos add column if not exists email_error   text;
 
 -- 2. Vista pública de la galería (imagen + miniatura + fecha; sin correos) ----
 --    Nota: `create or replace` conserva el GRANT select existente para anon.
-create or replace view public.gallery_photos as
+--    security_invoker evita el aviso "Security Definer View" del Advisor
+--    (requiere haber corrido también fix-security-advisor.sql o setup.sql).
+create or replace view public.gallery_photos
+    with (security_invoker = true) as
     select id, image_path, created_at, thumb_path
     from public.photos
     order by created_at desc;
