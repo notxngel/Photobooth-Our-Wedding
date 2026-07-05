@@ -224,8 +224,8 @@
                 <button id="btn-download" class="btn btn-primary btn-full" aria-label="Descargar fotografía">
                     <span data-i18n="result.download">Descargar</span>
                 </button>
-                <button id="btn-save-send" class="btn btn-outline btn-full" aria-label="Enviar fotografía por correo">
-                    <span data-i18n="result.email">Enviar por Correo</span>
+                <button id="btn-save-send" class="btn btn-outline btn-full" aria-label="Guardar en la galería y obtener código QR">
+                    <span data-i18n="result.qr">Guardar en la Galería</span>
                 </button>
                 <button id="btn-retake-result" class="btn btn-text btn-full" aria-label="Nueva sesión">
                     <span data-i18n="result.retake">Nueva Sesión</span>
@@ -268,9 +268,9 @@
     </div>
 
     <!-- ══════════════════════════════════════════════
-         MODAL — GUARDAR & ENVIAR
+         MODAL — GUARDAR EN LA GALERÍA + CÓDIGO QR
     ══════════════════════════════════════════════ -->
-    <div id="email-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+    <div id="save-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
         <div class="modal-card">
             <button id="btn-close-modal" class="btn-icon modal-close-btn" aria-label="Cerrar">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -278,19 +278,32 @@
                 </svg>
             </button>
 
-            <div class="modal-header">
-                <h3 data-i18n="modal.title">Guardar Foto</h3>
-                <p data-i18n="modal.desc">Tu foto se guardará en la galería de la boda. Si además quieres recibirla por correo, déjanos tu email (opcional).</p>
+            <!-- Vista 1: confirmar guardado -->
+            <div id="save-view">
+                <div class="modal-header">
+                    <h3 data-i18n="modal.title">Guardar Foto</h3>
+                    <p data-i18n="modal.desc">Tu foto se guardará en la galería compartida de la boda y te daremos un código QR para llevártela en tu teléfono.</p>
+                </div>
+                <div class="modal-body">
+                    <div id="save-status" class="status-msg" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-save-gallery" class="btn btn-primary btn-full"><span data-i18n="modal.send">Guardar Foto</span></button>
+                </div>
             </div>
 
-            <div class="modal-body">
-                <input type="email" id="email-input" class="input-line" placeholder="tu@correo.com (opcional)" data-i18n="modal.placeholder" autocomplete="email">
-                <div id="email-status" class="status-msg"></div>
-                <p class="modal-consent" data-i18n="modal.consent">Al guardar, tu foto será visible en la galería compartida de la boda.</p>
-            </div>
-
-            <div class="modal-footer">
-                <button id="btn-send-email" class="btn btn-primary btn-full"><span data-i18n="modal.send">Guardar Foto</span></button>
+            <!-- Vista 2: foto guardada → QR para el teléfono del invitado -->
+            <div id="qr-view" style="display:none">
+                <div class="modal-header">
+                    <h3 data-i18n="modal.qr.title">¡Foto guardada!</h3>
+                    <p data-i18n="modal.qr.text">Escanea el código con la cámara de tu teléfono para abrir tu foto y guardarla.</p>
+                </div>
+                <div class="modal-body">
+                    <div class="qr-wrap"><img id="qr-img" src="" alt="Código QR de tu foto"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-qr-done" class="btn btn-outline btn-full"><span data-i18n="modal.qr.done">Listo</span></button>
+                </div>
             </div>
         </div>
     </div>
@@ -305,6 +318,7 @@
     </div>
 
     <script src="assets/js/config.js"></script>
+    <script src="assets/js/qr.js"></script>
     <script src="assets/js/app.js"></script>
 </body>
 </html>

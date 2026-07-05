@@ -1,11 +1,3 @@
 # Certificados locales del servidor de desarrollo (no subir)
 key.pem
 cert.pem
-
-# Secretos locales (service_role + Gmail) — NUNCA subir (dan acceso total)
-tools/secrets.js
-tools/admin-local.config.js
-
-# Dependencias del script de correo
-tools/emailer/node_modules/
-tools/emailer/package-lock.json
