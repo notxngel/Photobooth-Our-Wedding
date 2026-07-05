@@ -74,13 +74,15 @@ const TRANSLATIONS = {
         'result.gallery':       'Ver la galería',
         // Modal
         'modal.title':          'Guardar Foto',
-        'modal.desc':           'Tu foto se guardará en la galería de la boda. Déjanos tu correo si quieres que te la enviemos.',
-        'modal.placeholder':    'tu@correo.com',
+        'modal.desc':           'Tu foto se guardará en la galería de la boda. Si además quieres recibirla por correo, déjanos tu email (opcional).',
+        'modal.placeholder':    'tu@correo.com (opcional)',
+        'modal.consent':        'Al guardar, tu foto será visible en la galería compartida de la boda.',
         'modal.send':           'Guardar Foto',
-        'modal.invalid':        'Ingresa un correo electrónico válido.',
+        'modal.invalid':        'Ingresa un correo electrónico válido (o déjalo vacío).',
         'modal.sending':        'Guardando...',
         'modal.success':        '¡Foto guardada en tu dispositivo!',
         'modal.success.cloud':  '¡Listo! Tu foto se guardó y aparecerá en la galería.',
+        'modal.success.email':  '¡Listo! Tu foto está en la galería y te la enviaremos por correo.',
         'modal.uploaderror':    'No se pudo subir la foto. Revisa tu conexión e inténtalo de nuevo.',
         // iOS Install
         'pwa.ios.title':        'Experiencia completa',
@@ -125,13 +127,15 @@ const TRANSLATIONS = {
         'result.gallery':       'View the gallery',
         // Modal
         'modal.title':          'Save Photo',
-        'modal.desc':           'Your photo will be saved to the wedding gallery. Leave your email if you\'d like us to send it to you.',
-        'modal.placeholder':    'your@email.com',
+        'modal.desc':           'Your photo will be saved to the wedding gallery. If you\'d also like to receive it by email, leave your address (optional).',
+        'modal.placeholder':    'your@email.com (optional)',
+        'modal.consent':        'By saving, your photo will be visible in the shared wedding gallery.',
         'modal.send':           'Save Photo',
-        'modal.invalid':        'Please enter a valid email address.',
+        'modal.invalid':        'Please enter a valid email address (or leave it empty).',
         'modal.sending':        'Saving...',
         'modal.success':        'Photo saved to your device!',
         'modal.success.cloud':  'Done! Your photo was saved and will appear in the gallery.',
+        'modal.success.email':  'Done! Your photo is in the gallery and we\'ll email it to you.',
         'modal.uploaderror':    'Could not upload the photo. Check your connection and try again.',
         // iOS Install
         'pwa.ios.title':        'Full experience',
@@ -860,6 +864,17 @@ function openEmailModal() {
     if (input) requestAnimationFrame(() => input.focus());
 }
 
+// Trampa de foco: mientras el modal está abierto, Tab circula solo dentro de él
+document.getElementById('email-modal')?.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const modal = e.currentTarget;
+    const focusables = modal.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+    if (!focusables.length) return;
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first)      { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
+
 function closeEmailModal() {
     const modal = document.getElementById('email-modal');
     if (!modal) return;
@@ -910,8 +925,25 @@ async function fetchWithTimeout(url, opts, ms, label) {
     }
 }
 
+// Genera una miniatura JPEG ligera de la tira (para que la galería cargue
+// rápido con datos móviles). Devuelve un data URL, o null si algo falla.
+async function makeThumbnail(dataUrl, maxWidth = 400) {
+    try {
+        const img = await loadImage(dataUrl);
+        if (!img.width) return null;
+        const scale = Math.min(1, maxWidth / img.width);
+        const c = document.createElement('canvas');
+        c.width  = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        return c.toDataURL('image/jpeg', 0.8);
+    } catch (_) {
+        return null;
+    }
+}
+
 // Sube el JPEG al Storage de Supabase y registra una fila en la tabla `photos`.
-// Devuelve la URL pública de la imagen.
+// También sube una miniatura (no fatal si falla). Devuelve la URL pública.
 async function uploadPhotoToGallery(blob, email) {
     const cfg = backendConfig();
     if (!cfg) return null;
@@ -925,11 +957,33 @@ async function uploadPhotoToGallery(blob, email) {
     }, 20000, 'Storage');
     if (!up.ok) throw new Error('Storage ' + up.status + ': ' + (await up.text()).slice(0, 140));
 
-    const ins = await fetchWithTimeout(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
+    // Miniatura: mejora la galería pero nunca bloquea el guardado
+    let thumbPath = null;
+    try {
+        const thumbUrl = await makeThumbnail(state.photoDataUrl);
+        if (thumbUrl) {
+            const tName = `thumbs/${name}`;
+            const tUp = await fetchWithTimeout(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${tName}`, {
+                method: 'POST',
+                headers: { ...auth, 'Content-Type': 'image/jpeg' },
+                body: dataURLtoBlob(thumbUrl)
+            }, 15000, 'Storage');
+            if (tUp.ok) thumbPath = tName;
+        }
+    } catch (_) { /* sin miniatura — la galería usa la imagen completa */ }
+
+    const insert = payload => fetchWithTimeout(`${cfg.SUPABASE_URL}/rest/v1/photos`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ email: email || null, image_path: name })
+        body: JSON.stringify(payload)
     }, 20000, 'BD');
+
+    let ins = await insert({ email: email || null, image_path: name, thumb_path: thumbPath });
+    // Compatibilidad: si la BD aún no tiene la columna thumb_path (falta correr
+    // upgrade-fase2.sql), reintenta sin ella para no perder la foto.
+    if (!ins.ok && ins.status === 400) {
+        ins = await insert({ email: email || null, image_path: name });
+    }
     if (!ins.ok) throw new Error('BD ' + ins.status + ': ' + (await ins.text()).slice(0, 140));
 
     return `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
@@ -942,11 +996,13 @@ document.getElementById('btn-close-modal')?.addEventListener('click', closeEmail
 
 document.getElementById('btn-send-email')?.addEventListener('click', async () => {
     const input   = document.getElementById('email-input');
-    const email   = input?.value?.trim();
+    const email   = input?.value?.trim() || '';
     const status  = document.getElementById('email-status');
     const btnSend = document.getElementById('btn-send-email');
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    // El correo es OPCIONAL: vacío = solo guardar en la galería.
+    // Si el invitado escribió algo, sí debe ser un correo válido.
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showToast(t('modal.invalid'), 'error');
         return;
     }
@@ -971,7 +1027,7 @@ document.getElementById('btn-send-email')?.addEventListener('click', async () =>
         if (input)  input.value = '';
         if (status) status.textContent = '';
         closeEmailModal();
-        showToast(t('modal.success.cloud'), 'success');
+        showToast(email ? t('modal.success.email') : t('modal.success.cloud'), 'success');
     } catch (err) {
         console.error('Upload error:', err);
         if (status) status.textContent = '';

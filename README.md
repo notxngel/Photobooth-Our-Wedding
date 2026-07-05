@@ -14,7 +14,8 @@ Los invitados toman fotos con filtros, se componen en una tira de película, se
 ```
 /
 ├── index.html              Página principal (la app: portada, menú, cámara, resultado)
-├── gallery.html            Página de la galería (lista todas las fotos)
+├── gallery.html            Página de la galería (mosaico, lightbox, ES/EN)
+├── admin.html              Panel admin con PIN (borrar fotos desde cualquier dispositivo)
 ├── manifest.webmanifest    Configuración PWA (nombre, iconos, colores)
 ├── sw.js                   Service Worker (caché offline). ⚠️ DEBE quedarse en la raíz
 │
@@ -29,13 +30,21 @@ Los invitados toman fotos con filtros, se componen en una tira de película, se
 ├── icons/                  Iconos de la app (PWA / pantalla de inicio)
 │
 ├── supabase/
-│   └── setup.sql           Script de base de datos (se corre 1 vez en Supabase)
+│   ├── setup.sql           Script de base de datos (se corre 1 vez en Supabase)
+│   ├── upgrade-fase2.sql   Migración Fase 2: correo + admin + miniaturas
+│   └── functions/
+│       └── admin-photos/   Edge Function del panel admin (borrado con PIN)
 │
 ├── tools/
-│   └── dev-server.js       Servidor local HTTPS para probar (cámara) en el teléfono
+│   ├── dev-server.js       Servidor local HTTPS para probar (cámara) en el teléfono
+│   ├── admin-local.html    Panel admin local (respaldo, solo tu Mac)
+│   ├── secrets.example.js  Plantilla de secretos → cópiala a tools/secrets.js
+│   └── emailer/            Script que envía las fotos por correo (tu Gmail)
 │
 └── docs/                   Documentación
-    ├── SETUP_BACKEND.md        Guía paso a paso de Supabase
+    ├── SETUP_BACKEND.md        Guía paso a paso de Supabase (Fase 1)
+    ├── ADMIN.md                Borrar fotos: panel con PIN + panel local
+    ├── CORREO.md               Enviar las fotos a los invitados (Fase 2)
     ├── PRODUCTION_READINESS.md Informe de preparación para producción
     └── GEMINI.md               Notas de contexto del proyecto
 ```
@@ -76,11 +85,14 @@ y `https://<IP-de-tu-Wi-Fi>:8443`). Abre la del teléfono estando en la misma Wi
 La galería usa **Supabase** (almacenamiento + base de datos). La configuración inicial
 está en **`docs/SETUP_BACKEND.md`** y el script en **`supabase/setup.sql`**.
 
-### Gestionar / borrar fotos (solo tú, como admin)
-- **Quitar de la galería:** Supabase → **Table Editor** → tabla `photos` → marca filas → **Delete**.
-- **Borrar el archivo:** Supabase → **Storage** → bucket `photos` → selecciona → **Delete**.
+### Gestionar / borrar fotos (solo ustedes, como admins)
+- **Desde el teléfono (recomendado):** `admin.html` con PIN — guía en **`docs/ADMIN.md`**.
+- **Desde tu Mac:** `tools/admin-local.html` — misma guía.
 
 Los invitados **no** pueden borrar fotos (a propósito): solo pueden subir.
+
+### Enviar las fotos a los invitados por correo
+Script `tools/emailer/` con tu Gmail — guía completa en **`docs/CORREO.md`**.
 
 ---
 
@@ -102,37 +114,28 @@ Los invitados **no** pueden borrar fotos (a propósito): solo pueden subir.
 
 ---
 
-## 🗺️ Próximos pasos (pendientes)
+## 🗺️ Estado y pendientes
 
-- [x] **Panel de administrador local** (`tools/admin-local.html`) — borrar fotos desde tu compu. Ver abajo.
-- [ ] **Fase 2 — Correo automático**: enviar a cada invitado su foto por correo (Resend).
+- [x] **Fase 1 — Galería en la nube** (Supabase): subir + ver + descargar.
+- [x] **Borrar fotos**: `admin.html` con PIN (cualquier dispositivo) y panel local.
+  ⚠️ Requiere **una vez**: correr `supabase/upgrade-fase2.sql` y desplegar la
+  Edge Function — pasos en **`docs/ADMIN.md`**.
+- [x] **Fase 2 — Correo a los invitados**: script con tu Gmail (`tools/emailer/`).
+  ⚠️ Requiere **una vez**: clave de aplicación de Gmail + `tools/secrets.js` —
+  pasos en **`docs/CORREO.md`**.
 - [ ] (Opcional) **Código QR** para que los invitados abran la app escaneando.
 
----
+## 🔐 Secretos locales (`tools/secrets.js`)
 
-## 🔐 Panel de administrador (local)
+Las herramientas de administración usan **un solo archivo de secretos** que vive
+únicamente en tu Mac (está en `.gitignore`, **nunca** se sube):
 
-Página **`tools/admin-local.html`** que corre **solo en tu computadora** para que
-**solo los novios** puedan borrar fotos. No se despliega ni se enlaza desde la app
-pública. Los invitados nunca pueden borrar.
+```bash
+cp tools/secrets.example.js tools/secrets.js   # y rellena los valores
+```
 
-Usa la clave **`service_role`** de Supabase (acceso total), por eso vive únicamente
-en tu máquina y **no** en el sitio publicado.
-
-**Puesta en marcha (una vez):**
-1. Copia la plantilla de configuración:
-   `cp tools/admin-local.config.example.js tools/admin-local.config.js`
-2. Supabase → **Project Settings → API**: copia la clave **`service_role`** (la secreta,
-   NO la `anon`) y pégala en `tools/admin-local.config.js`.
-   > ⚠️ Ese archivo está en `.gitignore` — **nunca** lo subas a GitHub ni lo despliegues.
-
-**Uso:**
-1. `node tools/dev-server.js`
-2. Abre **`https://localhost:8443/tools/admin-local.html`**
-3. Cada foto tiene un botón **Borrar** (elimina el archivo del Storage y la fila de la
-   base de datos de un clic). El botón **Actualizar** recarga la lista.
-
-La página se niega a funcionar fuera de `localhost` como red de seguridad.
+Contiene: la clave **secreta** de Supabase (para el panel local y el emailer) y
+tu **clave de aplicación de Gmail** (para enviar los correos).
 
 ---
 

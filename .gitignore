@@ -2,5 +2,10 @@
 key.pem
 cert.pem
 
-# Clave service_role del panel local de admin — NUNCA subir (da acceso total)
+# Secretos locales (service_role + Gmail) — NUNCA subir (dan acceso total)
+tools/secrets.js
 tools/admin-local.config.js
+
+# Dependencias del script de correo
+tools/emailer/node_modules/
+tools/emailer/package-lock.json

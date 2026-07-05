@@ -869,6 +869,13 @@ ul, ol { list-style: none; }
     opacity: 0.7;
 }
 
+.modal-consent {
+    margin-top: var(--spacing-sm);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    opacity: 0.45;
+}
+
 /* ==========================================================================
    TOAST NOTIFICATIONS
    ========================================================================== */

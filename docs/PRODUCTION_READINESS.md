@@ -3,6 +3,15 @@
 > Revisión del estado actual de la PWA y propuesta de arquitectura para la entrega de fotos.
 > Fecha de la revisión: 23/06/2026 · Fecha del evento: **16/07/2026**.
 
+> **ACTUALIZACIÓN 04/07/2026 — estado de los hallazgos:**
+> - ✅ Almacenamiento central (Supabase) — resuelto (Fase 1).
+> - ✅ Correo real a invitados — resuelto con script Gmail local (`docs/CORREO.md`); el correo ahora es **opcional** para el invitado.
+> - ✅ Borrado de fotos — panel con PIN desde cualquier dispositivo + panel local (`docs/ADMIN.md`).
+> - ✅ Marca unificada, fuga de partículas, SW tolerante + fuentes offline, Escape/foco en modales, código muerto — resueltos.
+> - ✅ Consentimiento en el modal, miniaturas y galería mejorada (lightbox, refresco, ES/EN) — añadidos.
+> - ✅ Bucket endurecido (solo JPEG, máx. 8 MB) — en `upgrade-fase2.sql`.
+> - ⏳ Pendiente operativo (una vez): correr `upgrade-fase2.sql`, desplegar Edge Function `admin-photos` + `ADMIN_PIN`, configurar `tools/secrets.js`, y el **ensayo general** end-to-end antes del 16/07.
+
 ---
 
 ## 1. Resumen ejecutivo

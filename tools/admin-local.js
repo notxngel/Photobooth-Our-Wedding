@@ -1,21 +1,21 @@
 /**
  * admin-local.js — Panel de administración LOCAL (solo en tu Mac).
  *
- * Usa la clave `service_role` (window.PB_ADMIN.SERVICE_ROLE_KEY) para listar y
- * borrar fotos SIN login ni políticas RLS: esa clave salta todos los permisos.
+ * Usa la clave secreta (PB_SECRETS.SERVICE_ROLE_KEY) para listar y borrar
+ * fotos SIN login ni políticas RLS: esa clave salta todos los permisos.
  * Por eso este panel:
  *   - solo se ejecuta en localhost / red local (guarda de abajo), y
- *   - lee la clave de tools/admin-local.config.js, que está en .gitignore.
+ *   - lee la clave de tools/secrets.js, que está en .gitignore.
  * NUNCA subas ese archivo ni abras esta página en el sitio público.
  */
 (function () {
     'use strict';
 
-    const cfg   = window.PB_CONFIG || {};
-    const admin = window.PB_ADMIN  || {};
-    const URL_  = cfg.SUPABASE_URL;
+    const cfg    = window.PB_CONFIG  || {};
+    const admin  = window.PB_SECRETS || {};
+    const URL_   = cfg.SUPABASE_URL;
     const BUCKET = cfg.BUCKET || 'photos';
-    const KEY   = admin.SERVICE_ROLE_KEY;
+    const KEY    = admin.SERVICE_ROLE_KEY;
 
     const grid    = document.getElementById('grid');
     const stateEl = document.getElementById('state');
@@ -39,9 +39,8 @@
 
     // ── Config lista ───────────────────────────────────────────────────────
     if (!URL_ || !KEY || KEY.includes('PEGA_AQUI')) {
-        setState('Falta la clave. Copia tools/admin-local.config.example.js a ' +
-                 'tools/admin-local.config.js y pega tu clave service_role de Supabase ' +
-                 '(Project Settings → API).');
+        setState('Falta la clave. Copia tools/secrets.example.js a tools/secrets.js ' +
+                 'y pega tu clave secreta de Supabase (Project Settings → API keys).');
         countEl.textContent = '';
         return;
     }
@@ -58,10 +57,17 @@
     async function loadPhotos() {
         setState('Cargando…'); grid.innerHTML = ''; countEl.textContent = '—';
         try {
-            const res = await fetch(
-                `${URL_}/rest/v1/photos?select=id,email,image_path,created_at&order=created_at.desc`,
+            let res = await fetch(
+                `${URL_}/rest/v1/photos?select=id,email,image_path,thumb_path,created_at,email_sent_at&order=created_at.desc`,
                 { headers: headers() }
             );
+            if (res.status === 400) {
+                // BD sin migrar (falta supabase/upgrade-fase2.sql) → modo básico
+                res = await fetch(
+                    `${URL_}/rest/v1/photos?select=id,email,image_path,created_at&order=created_at.desc`,
+                    { headers: headers() }
+                );
+            }
             if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 140));
             const rows = await res.json();
 
@@ -82,10 +88,11 @@
         const fig = document.createElement('figure');
 
         const img = document.createElement('img');
-        img.src = publicUrl(row.image_path); img.loading = 'lazy'; img.alt = 'Foto';
+        img.src = publicUrl(row.thumb_path || row.image_path); img.loading = 'lazy'; img.alt = 'Foto';
 
         const cap = document.createElement('figcaption');
-        cap.textContent = `${row.email || '(sin correo)'} · ${new Date(row.created_at).toLocaleString()}`;
+        const sent = row.email && row.email_sent_at ? ' · ✓ enviada' : '';
+        cap.textContent = `${row.email || '(sin correo)'} · ${new Date(row.created_at).toLocaleString()}${sent}`;
 
         const del = document.createElement('button');
         del.className = 'btn-del'; del.textContent = 'Borrar';
@@ -101,13 +108,16 @@
         btn.disabled = true; btn.textContent = 'Borrando…';
         fig.classList.add('deleting');
         try {
-            // 1) archivo del Storage (404/400 = ya no existe → no es fatal)
-            const delObj = await fetch(
-                `${URL_}/storage/v1/object/${BUCKET}/${encodeURI(row.image_path)}`,
-                { method: 'DELETE', headers: headers() }
-            );
-            if (!delObj.ok && delObj.status !== 404 && delObj.status !== 400) {
-                throw new Error('Storage ' + delObj.status);
+            // 1) archivos del Storage: imagen + miniatura (404/400 = ya no existe → no es fatal)
+            const paths = [row.image_path, row.thumb_path].filter(Boolean);
+            for (const p of paths) {
+                const delObj = await fetch(
+                    `${URL_}/storage/v1/object/${BUCKET}/${encodeURI(p)}`,
+                    { method: 'DELETE', headers: headers() }
+                );
+                if (!delObj.ok && delObj.status !== 404 && delObj.status !== 400) {
+                    throw new Error('Storage ' + delObj.status);
+                }
             }
 
             // 2) fila de la tabla (fuente de verdad de la galería)

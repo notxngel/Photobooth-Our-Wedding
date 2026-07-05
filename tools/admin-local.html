@@ -76,9 +76,9 @@
     </header>
 
     <div class="banner">
-        🔒 Este panel corre <strong>solo en tu computadora</strong> y usa la clave
-        <code>service_role</code>. No abras esta página en el sitio público ni subas
-        <code>tools/admin-local.config.js</code> a GitHub.
+        🔒 Este panel corre <strong>solo en tu computadora</strong> y usa tu clave
+        secreta de Supabase. No abras esta página en el sitio público ni subas
+        <code>tools/secrets.js</code> a GitHub.
     </div>
 
     <div class="toolbar">
@@ -89,9 +89,9 @@
     <div id="grid" class="grid"></div>
     <p id="state" style="display:none"></p>
 
-    <!-- Config pública (URL + bucket) y clave local (service_role) -->
+    <!-- Config pública (URL + bucket) y secretos locales (tools/secrets.js) -->
     <script src="../assets/js/config.js"></script>
-    <script src="admin-local.config.js"></script>
+    <script src="secrets.js"></script>
     <script src="admin-local.js"></script>
 </body>
 </html>

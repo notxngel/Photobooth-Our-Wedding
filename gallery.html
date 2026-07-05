@@ -24,7 +24,7 @@
             min-height: 100vh;
             padding: 2rem 1rem 4rem;
         }
-        header { text-align: center; margin-bottom: 2.5rem; }
+        header { text-align: center; margin-bottom: 1.6rem; }
         .back {
             position: fixed; top: 1rem; left: 1rem; z-index: 10;
             color: var(--text); text-decoration: none; opacity: 0.75;
@@ -43,16 +43,33 @@
             margin-top: -0.4rem;
         }
         .subtitle { opacity: 0.55; font-weight: 300; font-size: 0.9rem; margin-top: 0.4rem; }
+
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            max-width: 1100px; margin: 0 auto 1.2rem; gap: 1rem;
+        }
+        .count { opacity: 0.6; font-size: 0.85rem; font-weight: 300; }
+        .btn-refresh {
+            font-family: inherit; cursor: pointer; font-size: 0.8rem;
+            color: var(--text); background: transparent;
+            border: 1px solid rgba(245,230,211,0.25); border-radius: 999px;
+            padding: 0.45rem 1.05rem; transition: border-color 0.2s, opacity 0.2s;
+        }
+        .btn-refresh:hover { border-color: var(--accent); }
+        .btn-refresh:disabled { opacity: 0.45; cursor: default; }
+
+        /* Mosaico: columnas que respetan la proporción real de cada tira */
         .grid {
-            display: grid; gap: 14px; max-width: 1100px; margin: 0 auto;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            columns: 4 170px;
+            column-gap: 14px;
+            max-width: 1100px; margin: 0 auto;
         }
         figure {
             position: relative; border-radius: 10px; overflow: hidden;
             background: #1a1712; border: 1px solid rgba(245,230,211,0.1);
-            aspect-ratio: 3 / 4;
+            break-inside: avoid; margin-bottom: 14px;
         }
-        figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        figure img { width: 100%; display: block; cursor: zoom-in; }
         .dl {
             position: absolute; bottom: 8px; right: 8px;
             color: var(--text); text-decoration: none;
@@ -67,19 +84,68 @@
             text-align: center; opacity: 0.6; margin-top: 3rem;
             font-weight: 300; line-height: 1.7;
         }
+
+        /* ── Lightbox ─────────────────────────────────────────────────── */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 100;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(8, 6, 4, 0.94); backdrop-filter: blur(8px);
+            padding: 3.2rem 0.5rem;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img {
+            max-width: min(92vw, 560px); max-height: 100%;
+            object-fit: contain; border-radius: 8px;
+            box-shadow: 0 20px 70px rgba(0,0,0,0.7);
+        }
+        .lb-btn {
+            position: absolute; z-index: 101;
+            font-family: inherit; cursor: pointer; color: var(--text);
+            background: rgba(0,0,0,0.45); border: 1px solid rgba(245,230,211,0.25);
+            border-radius: 999px; backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.2s, opacity 0.2s;
+        }
+        .lb-btn:hover { border-color: var(--accent); }
+        .lb-btn:disabled { opacity: 0.25; cursor: default; }
+        #lb-close { top: max(1rem, env(safe-area-inset-top)); right: 1rem; width: 42px; height: 42px; font-size: 1.3rem; }
+        #lb-prev  { left: 0.6rem;  top: 50%; transform: translateY(-50%); width: 42px; height: 42px; font-size: 1.4rem; }
+        #lb-next  { right: 0.6rem; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; font-size: 1.4rem; }
+        #lb-download {
+            position: absolute; bottom: max(1.1rem, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+            color: var(--text); text-decoration: none; font-size: 0.85rem;
+            padding: 0.55rem 1.4rem; border-radius: 999px;
+            background: rgba(0,0,0,0.55); border: 1px solid rgba(201,169,110,0.6);
+            backdrop-filter: blur(6px);
+        }
+        #lb-download:hover { border-color: var(--accent); }
     </style>
 </head>
 <body>
-    <a href="index.html" class="back">‹ Volver</a>
+    <a href="index.html" class="back" data-g-i18n="back">‹ Volver</a>
 
     <header>
         <h1>Matamoro's Wedding</h1>
         <p class="couple">Angel &amp; Clara</p>
-        <p class="subtitle">Galería de la boda · 07 · 16 · 2026</p>
+        <p class="subtitle" data-g-i18n="subtitle">Galería de la boda · 07 · 16 · 2026</p>
     </header>
+
+    <div class="toolbar">
+        <span class="count" id="count"></span>
+        <button id="btn-refresh" class="btn-refresh" data-g-i18n="refresh">Actualizar</button>
+    </div>
 
     <div id="grid" class="grid"></div>
     <p id="state" style="display:none"></p>
+
+    <!-- Lightbox: vista ampliada de una foto -->
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+        <button id="lb-close" class="lb-btn" aria-label="Cerrar">✕</button>
+        <button id="lb-prev"  class="lb-btn" aria-label="Anterior">‹</button>
+        <img id="lb-img" src="" alt="Foto de la boda">
+        <button id="lb-next"  class="lb-btn" aria-label="Siguiente">›</button>
+        <a id="lb-download" href="#" data-g-i18n="download">Descargar</a>
+    </div>
 
     <script src="assets/js/config.js"></script>
     <script src="assets/js/gallery.js"></script>

@@ -1,0 +1,12 @@
+{
+    "name": "photobooth-emailer",
+    "private": true,
+    "description": "Envía a cada invitado su foto del photobooth desde tu Gmail",
+    "scripts": {
+        "send": "node send-emails.js",
+        "watch": "node send-emails.js --watch"
+    },
+    "dependencies": {
+        "nodemailer": "^6.9.14"
+    }
+}

@@ -61,8 +61,10 @@ Tienes dos opciones:
 - Los **correos NO se exponen** en la galería: la página solo lee una vista
   (`gallery_photos`) que muestra imagen y fecha, nunca el correo.
 
-## Fase 2 (después) — Correo automático con enlace
+## Fase 2 — Correo, admin y miniaturas (ya implementada)
 
-Para que a cada invitado le llegue su foto por correo automáticamente, añadiremos una
-**Supabase Edge Function** + **Resend** (servicio de correo gratuito). Lo dejamos
-preparado cuando termines la Fase 1.
+La Fase 2 ya está en el repo. Después de esta guía, corre **una vez** el script
+**`supabase/upgrade-fase2.sql`** (SQL Editor → Run) y sigue:
+
+- **`docs/CORREO.md`** — enviar a cada invitado su foto por correo (tu Gmail).
+- **`docs/ADMIN.md`** — borrar fotos desde el teléfono (PIN) o desde tu Mac.
