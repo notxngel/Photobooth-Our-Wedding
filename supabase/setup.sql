@@ -39,11 +39,21 @@ create policy "anon inserta fotos"
     to anon
     with check (true);
 
--- 2b. ...pero NADIE puede leer la tabla directamente (protege los correos).
---     La galería lee desde la vista de abajo, que no expone el correo.
+-- 2b. ...y puede LEER solo las columnas públicas (el correo queda ilegible:
+--     no está en la lista del GRANT). Privilegio por columna + política RLS.
+grant select (id, image_path, thumb_path, created_at) on public.photos to anon;
+
+drop policy if exists "anon lee las columnas publicas" on public.photos;
+create policy "anon lee las columnas publicas"
+    on public.photos for select
+    to anon
+    using (true);
 
 -- 3. Vista pública de la galería: imagen + miniatura + fecha (sin correos) ----
-create or replace view public.gallery_photos as
+--    security_invoker: la vista corre con los permisos de quien consulta
+--    (evita el aviso "Security Definer View" del Security Advisor).
+create or replace view public.gallery_photos
+    with (security_invoker = true) as
     select id, image_path, created_at, thumb_path
     from public.photos
     order by created_at desc;
