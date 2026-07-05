@@ -4,7 +4,7 @@
  * Cache-first for static assets y para las fuentes de Google; el resto pasa a la red.
  */
 
-const CACHE_NAME = 'photobooth-v13';
+const CACHE_NAME = 'photobooth-v14';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
     './assets/js/app.js',
     './assets/js/config.js',
     './assets/js/gallery.js',
+    './assets/js/qr.js',
     './manifest.webmanifest',
     './icons/icon-192.png',
     './icons/icon-512.png'

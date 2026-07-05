@@ -2,7 +2,8 @@
 
 PWA (app web) de photo booth para la boda de **Angel & Clara** (16/07/2026).
 Los invitados toman fotos con filtros, se componen en una tira de película, se
-**descargan** y se **suben a una galería en la nube** (Supabase).
+**descargan**, se **suben a una galería en la nube** (Supabase) y se llevan la
+foto a su teléfono **escaneando un código QR** que aparece al guardarla.
 
 - 🌐 **App en vivo:** https://notxngel.github.io/Photobooth-Our-Wedding/
 - 🖼️ **Galería:** https://notxngel.github.io/Photobooth-Our-Wedding/gallery.html
@@ -15,7 +16,6 @@ Los invitados toman fotos con filtros, se componen en una tira de película, se
 /
 ├── index.html              Página principal (la app: portada, menú, cámara, resultado)
 ├── gallery.html            Página de la galería (mosaico, lightbox, ES/EN)
-├── admin.html              Panel admin con PIN (borrar fotos desde cualquier dispositivo)
 ├── manifest.webmanifest    Configuración PWA (nombre, iconos, colores)
 ├── sw.js                   Service Worker (caché offline). ⚠️ DEBE quedarse en la raíz
 │
@@ -23,28 +23,22 @@ Los invitados toman fotos con filtros, se componen en una tira de película, se
 │   ├── css/
 │   │   └── styles.css      TODOS los estilos de la app
 │   └── js/
-│       ├── app.js          Lógica principal (cámara, filtros, captura, subida, i18n)
+│       ├── app.js          Lógica principal (cámara, filtros, captura, subida, QR, i18n)
 │       ├── config.js       Datos de Supabase (URL + clave pública)
-│       └── gallery.js      Lógica de la página de galería
+│       ├── gallery.js      Lógica de la página de galería
+│       └── qr.js           Generador de códigos QR (librería MIT, sin dependencias)
 │
 ├── icons/                  Iconos de la app (PWA / pantalla de inicio)
 │
 ├── supabase/
 │   ├── setup.sql           Script de base de datos (se corre 1 vez en Supabase)
-│   ├── upgrade-fase2.sql   Migración Fase 2: correo + admin + miniaturas
-│   └── functions/
-│       └── admin-photos/   Edge Function del panel admin (borrado con PIN)
+│   └── upgrade-fase2.sql   Migración Fase 2: miniaturas + bucket endurecido
 │
 ├── tools/
-│   ├── dev-server.js       Servidor local HTTPS para probar (cámara) en el teléfono
-│   ├── admin-local.html    Panel admin local (respaldo, solo tu Mac)
-│   ├── secrets.example.js  Plantilla de secretos → cópiala a tools/secrets.js
-│   └── emailer/            Script que envía las fotos por correo (tu Gmail)
+│   └── dev-server.js       Servidor local HTTPS para probar (cámara) en el teléfono
 │
 └── docs/                   Documentación
     ├── SETUP_BACKEND.md        Guía paso a paso de Supabase (Fase 1)
-    ├── ADMIN.md                Borrar fotos: panel con PIN + panel local
-    ├── CORREO.md               Enviar las fotos a los invitados (Fase 2)
     ├── PRODUCTION_READINESS.md Informe de preparación para producción
     └── GEMINI.md               Notas de contexto del proyecto
 ```
@@ -82,17 +76,25 @@ y `https://<IP-de-tu-Wi-Fi>:8443`). Abre la del teléfono estando en la misma Wi
 
 ## ☁️ Backend (Supabase)
 
-La galería usa **Supabase** (almacenamiento + base de datos). La configuración inicial
-está en **`docs/SETUP_BACKEND.md`** y el script en **`supabase/setup.sql`**.
+La galería usa **Supabase** (almacenamiento + base de datos), solo con la clave
+**pública** (`anon`): la app únicamente puede **subir** fotos, nunca borrarlas ni
+leer nada privado. La configuración inicial está en **`docs/SETUP_BACKEND.md`**
+y el script en **`supabase/setup.sql`**.
 
-### Gestionar / borrar fotos (solo ustedes, como admins)
-- **Desde el teléfono (recomendado):** `admin.html` con PIN — guía en **`docs/ADMIN.md`**.
-- **Desde tu Mac:** `tools/admin-local.html` — misma guía.
+### Entrega al invitado: código QR
+Al guardar una foto en la galería, la app muestra un **código QR** con el enlace
+directo a la foto. El invitado lo escanea con la cámara de su teléfono, la foto
+se abre y la guarda. Sin correos, sin scripts, sin nada que configurar.
+
+### Borrar fotos (solo ustedes, como admins)
+Directo en el **dashboard de Supabase** (no hay panel propio, a propósito —
+menos piezas que fallen):
+
+1. **Table Editor → `photos`** → borra la(s) fila(s) → desaparecen de la galería.
+2. (Opcional, para liberar espacio) **Storage → `photos`** → borra el archivo
+   `Matamoros_...jpg` y su miniatura en `thumbs/`.
 
 Los invitados **no** pueden borrar fotos (a propósito): solo pueden subir.
-
-### Enviar las fotos a los invitados por correo
-Script `tools/emailer/` con tu Gmail — guía completa en **`docs/CORREO.md`**.
 
 ---
 
@@ -117,25 +119,16 @@ Script `tools/emailer/` con tu Gmail — guía completa en **`docs/CORREO.md`**.
 ## 🗺️ Estado y pendientes
 
 - [x] **Fase 1 — Galería en la nube** (Supabase): subir + ver + descargar.
-- [x] **Borrar fotos**: `admin.html` con PIN (cualquier dispositivo) y panel local.
-  ⚠️ Requiere **una vez**: correr `supabase/upgrade-fase2.sql` y desplegar la
-  Edge Function — pasos en **`docs/ADMIN.md`**.
-- [x] **Fase 2 — Correo a los invitados**: script con tu Gmail (`tools/emailer/`).
-  ⚠️ Requiere **una vez**: clave de aplicación de Gmail + `tools/secrets.js` —
-  pasos en **`docs/CORREO.md`**.
-- [ ] (Opcional) **Código QR** para que los invitados abran la app escaneando.
+- [x] **Fase 2 — Miniaturas + bucket endurecido**: correr `supabase/upgrade-fase2.sql`
+  una vez (ya ejecutado).
+- [x] **Entrega por código QR**: el invitado escanea y se lleva su foto al teléfono.
+- [x] **Borrar fotos**: desde el dashboard de Supabase (sección Backend, arriba).
+- [ ] **Ensayo general** end-to-end antes del 16/07 (tomar → guardar → escanear QR
+  → ver en galería).
 
-## 🔐 Secretos locales (`tools/secrets.js`)
-
-Las herramientas de administración usan **un solo archivo de secretos** que vive
-únicamente en tu Mac (está en `.gitignore`, **nunca** se sube):
-
-```bash
-cp tools/secrets.example.js tools/secrets.js   # y rellena los valores
-```
-
-Contiene: la clave **secreta** de Supabase (para el panel local y el emailer) y
-tu **clave de aplicación de Gmail** (para enviar los correos).
+> 🔐 **Sin secretos**: la app solo usa la clave pública de Supabase. La clave
+> secreta (`service_role`) no se usa en ningún lado — no hay nada que configurar
+> ni que se pueda filtrar.
 
 ---
 

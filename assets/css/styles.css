@@ -793,7 +793,7 @@ ul, ol { list-style: none; }
 .btn-text:active { color: var(--color-text); }
 
 /* ==========================================================================
-   MODAL — GUARDAR & ENVIAR
+   MODAL — GUARDAR EN LA GALERÍA + QR
    ========================================================================== */
 .modal-overlay {
     position: fixed;
@@ -848,32 +848,26 @@ ul, ol { list-style: none; }
 
 .modal-body { margin-bottom: var(--spacing-lg); }
 
-.input-line {
-    width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text);
-    padding: var(--spacing-sm) 0;
-    font-size: 1.1rem;
-    font-family: var(--font-ui);
-    transition: var(--transition-fast);
-}
-.input-line:focus       { outline: none; border-bottom-color: var(--color-text); }
-.input-line::placeholder { color: rgba(245,230,211,0.28); }
-
 .status-msg {
-    margin-top: var(--spacing-sm);
     font-size: 0.85rem;
     min-height: 1.2em;
     opacity: 0.7;
+    text-align: center;
 }
 
-.modal-consent {
-    margin-top: var(--spacing-sm);
-    font-size: 0.72rem;
-    line-height: 1.5;
-    opacity: 0.45;
+/* Código QR sobre fondo blanco (necesario para que cualquier cámara lo lea) */
+.qr-wrap {
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    width: fit-content;
+    margin: 0 auto;
+}
+.qr-wrap img {
+    display: block;
+    width: 220px;
+    height: 220px;
+    image-rendering: pixelated;   /* mantiene los módulos nítidos al escalar */
 }
 
 /* ==========================================================================

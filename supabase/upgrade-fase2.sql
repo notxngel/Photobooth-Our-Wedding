@@ -31,6 +31,6 @@ update storage.buckets
        allowed_mime_types = array['image/jpeg']
  where id = 'photos';
 
--- Listo. Siguientes pasos (ver docs/ADMIN.md y docs/CORREO.md):
---   · Desplegar la Edge Function `admin-photos` y definir el secreto ADMIN_PIN.
---   · Configurar tools/secrets.js en tu Mac para el panel local y el emailer.
+-- Listo. Nota: las columnas email/email_sent_at/email_error ya no se usan
+-- (la entrega al invitado es por código QR en pantalla); se conservan solo
+-- para no tocar la base ya desplegada. Son inofensivas.

@@ -47,8 +47,8 @@ Tienes dos opciones:
 
 ## Paso 5 — Probar
 
-1. Abre la app, toma una foto, pulsa **Guardar Foto**, escribe un correo y confirma.
-   Debe decir *"¡Listo! Tu foto se guardó y aparecerá en la galería."*
+1. Abre la app, toma una foto, pulsa **Guardar en la Galería** y confirma.
+   Debe aparecer un **código QR**: escanéalo con otro teléfono y la foto se abre.
 2. Abre **`/gallery.html`** (o el enlace **"Ver la galería"** en la pantalla de resultado):
    tu foto debe aparecer ahí, con botón de **Descargar**.
 
@@ -58,13 +58,14 @@ Tienes dos opciones:
 
 - La **galería es pública** para quien tenga el enlace (las fotos se ven sin contraseña).
   Es lo normal en una boda; si quieres restringirla, lo vemos.
-- Los **correos NO se exponen** en la galería: la página solo lee una vista
-  (`gallery_photos`) que muestra imagen y fecha, nunca el correo.
+- La app **no recopila datos de los invitados** (ni correos ni nombres): solo la foto.
 
-## Fase 2 — Correo, admin y miniaturas (ya implementada)
+## Fase 2 — Miniaturas y bucket endurecido (ya implementada)
 
-La Fase 2 ya está en el repo. Después de esta guía, corre **una vez** el script
-**`supabase/upgrade-fase2.sql`** (SQL Editor → Run) y sigue:
+Después de esta guía, corre **una vez** el script **`supabase/upgrade-fase2.sql`**
+(SQL Editor → Run): añade la miniatura de cada foto (galería más rápida) y limita
+el bucket a JPEG de máximo 8 MB.
 
-- **`docs/CORREO.md`** — enviar a cada invitado su foto por correo (tu Gmail).
-- **`docs/ADMIN.md`** — borrar fotos desde el teléfono (PIN) o desde tu Mac.
+## Borrar fotos (admins)
+
+Directo en el dashboard de Supabase — pasos en el **README**, sección *Backend*.
