@@ -11,6 +11,7 @@ const state = {
     stream: null,
     photoDataUrl: null,
     uploadedUrl: null,        // URL pública en la galería (evita subir dos veces)
+    uploadName: null,         // nombre de archivo fijo para esta foto (reintentos no duplican)
     capturedFrames: [],
     isCapturing: false,
     lang: 'es'
@@ -283,7 +284,7 @@ function navigateTo(screenId) {
         startCamera();
         const badge = document.getElementById('current-mode-display');
         if (badge) badge.textContent = getLocalizedModeLabels()[state.mode] || '';
-    } else if (state.stream) {
+    } else {
         stopCamera();
     }
 }
@@ -313,7 +314,8 @@ document.getElementById('btn-start')?.addEventListener('click', () => {
     navigateTo('menu');
 });
 document.getElementById('btn-back-menu')?.addEventListener('click', () => navigateTo('landing'));
-document.getElementById('btn-back-booth')?.addEventListener('click', () => navigateTo('menu'));
+const backBoothBtn = document.getElementById('btn-back-booth');
+backBoothBtn?.addEventListener('click', () => navigateTo('menu'));
 
 /* ==========================================================================
    MENÚ — SELECCIÓN DE MODO
@@ -347,6 +349,12 @@ document.getElementById('btn-start-camera')?.addEventListener('click', () => {
    ========================================================================== */
 const video = document.getElementById('player');
 
+// Cada llamada a startCamera()/stopCamera() invalida las anteriores: si una
+// petición getUserMedia() pendiente resuelve después de que el usuario ya
+// navegó fuera o pidió reintentar, se descarta (y se detiene) en vez de
+// sobrescribir state.stream y dejar la cámara encendida en segundo plano.
+let cameraRequestId = 0;
+
 async function startCamera() {
     hideCameraError();
 
@@ -355,12 +363,20 @@ async function startCamera() {
         return;
     }
 
+    const requestId = ++cameraRequestId;
+
     try {
-        state.stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
             // Pedimos la mayor resolución disponible — el recorte usa la real
             video: { facingMode: 'user', width: { ideal: 2560 }, height: { ideal: 1440 } },
             audio: false
         });
+        if (requestId !== cameraRequestId) {
+            // Se navegó fuera o se pidió otro intento mientras esperábamos permiso
+            stream.getTracks().forEach(tr => tr.stop());
+            return;
+        }
+        state.stream = stream;
         if (video) {
             video.srcObject = state.stream;
             video.addEventListener('loadedmetadata', () => {
@@ -369,6 +385,7 @@ async function startCamera() {
             }, { once: true });
         }
     } catch (err) {
+        if (requestId !== cameraRequestId) return; // intento obsoleto, ignorar
         console.error('Camera error:', err);
         const msg = (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError'))
             ? t('booth.cam.denied')
@@ -380,6 +397,7 @@ async function startCamera() {
 }
 
 function stopCamera() {
+    cameraRequestId++; // invalida cualquier getUserMedia() en vuelo
     state.stream?.getTracks().forEach(t => t.stop());
     state.stream = null;
     if (video) video.srcObject = null;
@@ -766,7 +784,9 @@ captureBtn?.addEventListener('click', async () => {
     state.isCapturing  = true;
     state.capturedFrames = [];
     state.uploadedUrl  = null;
+    state.uploadName   = null;
     captureBtn.disabled = true;
+    if (backBoothBtn) backBoothBtn.disabled = true;
 
     const total = PHOTO_COUNTS[state.mode] || 1;
 
@@ -790,6 +810,12 @@ captureBtn?.addEventListener('click', async () => {
 
     state.isCapturing  = false;
     captureBtn.disabled = false;
+    if (backBoothBtn) backBoothBtn.disabled = false;
+
+    // Si el usuario ya abandonó el booth mientras la secuencia terminaba
+    // (p. ej. pulsó "Volver" antes de que se re-habilitara), no lo forzamos
+    // a la pantalla de resultado.
+    if (!screens.booth?.classList.contains('active')) return;
 
     if (state.photoDataUrl) {
         // Todos los modos se muestran como tira de película (sin paspartú)
@@ -916,6 +942,7 @@ document.getElementById('save-modal')?.addEventListener('click', e => {
 document.getElementById('btn-retake-result')?.addEventListener('click', () => {
     state.photoDataUrl   = null;
     state.uploadedUrl    = null;
+    state.uploadName     = null;
     state.capturedFrames = [];
     navigateTo('menu');
 });
@@ -969,12 +996,33 @@ async function makeThumbnail(dataUrl, maxWidth = 400) {
 async function uploadPhotoToGallery(blob) {
     const cfg = backendConfig();
     if (!cfg) return null;
-    const name = `Matamoros_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
-    const auth = { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` };
 
+    // Reutilizamos el mismo nombre en reintentos (en vez de generar uno nuevo
+    // cada vez) para poder detectar si un intento anterior ya se completó en
+    // el servidor aunque el cliente no haya visto la respuesta.
+    const isRetry = !!state.uploadName;
+    if (!state.uploadName) {
+        state.uploadName = `Matamoros_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+    }
+    const name = state.uploadName;
+    const auth = { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` };
+    const publicUrl = `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
+
+    if (isRetry) {
+        try {
+            const existing = await fetchWithTimeout(
+                `${cfg.SUPABASE_URL}/rest/v1/photos?image_path=eq.${encodeURIComponent(name)}&select=id`,
+                { headers: auth }, 10000, 'BD'
+            );
+            if (existing.ok && (await existing.json()).length) return publicUrl; // ya se había guardado
+        } catch (_) { /* si el chequeo falla, seguimos con el reintento normal */ }
+    }
+
+    // x-upsert: si un intento anterior ya subió este mismo nombre, lo
+    // sobreescribe en vez de fallar con "el recurso ya existe".
     const up = await fetchWithTimeout(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${name}`, {
         method: 'POST',
-        headers: { ...auth, 'Content-Type': 'image/jpeg' },
+        headers: { ...auth, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
         body: blob
     }, 20000, 'Storage');
     if (!up.ok) throw new Error('Storage ' + up.status + ': ' + (await up.text()).slice(0, 140));
@@ -987,7 +1035,7 @@ async function uploadPhotoToGallery(blob) {
             const tName = `thumbs/${name}`;
             const tUp = await fetchWithTimeout(`${cfg.SUPABASE_URL}/storage/v1/object/${cfg.BUCKET}/${tName}`, {
                 method: 'POST',
-                headers: { ...auth, 'Content-Type': 'image/jpeg' },
+                headers: { ...auth, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
                 body: dataURLtoBlob(thumbUrl)
             }, 15000, 'Storage');
             if (tUp.ok) thumbPath = tName;
@@ -1008,7 +1056,7 @@ async function uploadPhotoToGallery(blob) {
     }
     if (!ins.ok) throw new Error('BD ' + ins.status + ': ' + (await ins.text()).slice(0, 140));
 
-    return `${cfg.SUPABASE_URL}/storage/v1/object/public/${cfg.BUCKET}/${name}`;
+    return publicUrl;
 }
 
 /* ==========================================================================

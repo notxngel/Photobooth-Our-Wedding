@@ -28,10 +28,11 @@ frameworks) publicado en GitHub Pages desde `main`. Backend mínimo: Supabase
 - `index.html`, `gallery.html`, `manifest.webmanifest` y `sw.js` deben
   permanecer en la raíz (alcance del service worker).
 - Tras tocar `app.js`/`styles.css`/`config.js`/`index.html`: **subir
-  `CACHE_NAME`** en `sw.js` (actualmente `photobooth-v14`).
-- SQL en `supabase/`: `setup.sql` (desde cero), `upgrade-fase2.sql`
-  (miniaturas + bucket), `fix-security-advisor.sql` (vista
-  `security_invoker`; se pega una vez en el SQL Editor del dashboard).
+  `CACHE_NAME`** en `sw.js` (actualmente `photobooth-v15`).
+- SQL: fuente única `supabase/schema.sql` (bucket + tabla `photos` + vista
+  `gallery_photos` + todas las políticas RLS, con nombres `pb_*`). Es
+  idempotente — se puede volver a pegar y correr entero en el SQL Editor del
+  dashboard sin duplicar nada ni perder fotos. Ya no hay scripts sueltos.
 
 ## Comandos
 - Probar en local con cámara: `node tools/dev-server.js` (HTTPS, puerto 8443).

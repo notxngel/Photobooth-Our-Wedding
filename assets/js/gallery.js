@@ -72,12 +72,27 @@
     /* ── Carga de datos ──────────────────────────────────────────────────── */
     const headers = { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` };
 
+    // fetch con límite de tiempo: si no responde, lanza un error claro en vez
+    // de dejar la petición colgada indefinidamente (wifi del venue poco fiable).
+    async function fetchWithTimeout(url, opts, ms) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), ms);
+        try {
+            return await fetch(url, { ...opts, signal: ctrl.signal });
+        } catch (e) {
+            if (e.name === 'AbortError') throw new Error('sin respuesta en ' + Math.round(ms / 1000) + 's (timeout)');
+            throw e;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     async function fetchRows() {
         const base = `${cfg.SUPABASE_URL}/rest/v1/gallery_photos`;
-        let res = await fetch(`${base}?select=image_path,thumb_path,created_at&order=created_at.desc`, { headers });
+        let res = await fetchWithTimeout(`${base}?select=image_path,thumb_path,created_at&order=created_at.desc`, { headers }, 15000);
         if (res.status === 400) {
             // BD sin la columna thumb_path (falta upgrade-fase2.sql) → modo básico
-            res = await fetch(`${base}?select=image_path,created_at&order=created_at.desc`, { headers });
+            res = await fetchWithTimeout(`${base}?select=image_path,created_at&order=created_at.desc`, { headers }, 15000);
         }
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();

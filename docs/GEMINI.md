@@ -1,6 +1,6 @@
 # Photobooth - Our Wedding (Angel & Clara)
 
-> **Última actualización de esta memoria: 07/07/2026** (por Claude Code).
+> **Última actualización de esta memoria: 08/07/2026** (por Claude Code).
 > Cualquier agente que haga cambios significativos debe actualizar este
 > archivo (y el `CLAUDE.md` de la raíz) antes de terminar su sesión.
 
@@ -26,13 +26,16 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   URL pública de la foto (`assets/js/qr.js`, librería qrcode-generator MIT
   vendorizada; funciones `openSaveModal`/`showQrView`/`uploadPhotoToGallery`
   en `app.js`). `state.uploadedUrl` evita subir dos veces la misma foto.
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v14`;
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v15`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
-- **SQL** (`supabase/`): `setup.sql` (instalación desde cero),
-  `upgrade-fase2.sql` (miniaturas + bucket solo JPEG ≤8MB),
-  `fix-security-advisor.sql` (vista `gallery_photos` como `security_invoker`
-  + lectura anon solo de columnas públicas — resuelve el aviso CRITICAL del
-  Security Advisor).
+- **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
+  sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).
+  Idempotente: bucket `photos` (JPEG ≤8MB), tabla `photos`, vista
+  `gallery_photos` con `security_invoker=true` (sin aviso del Security
+  Advisor), y todas las políticas RLS con nombres `pb_*` — incluye
+  `pb_storage_update`, necesaria para que los reintentos de subida
+  (`x-upsert: true` en `uploadPhotoToGallery`) no fallen con 403. Verificado
+  contra el proyecto en vivo el 07-08/07/2026 con `curl` directo a la API.
 
 ## ⛔ Decisiones deliberadas — NO revertir
 Estas piezas se **eliminaron a propósito** el 05/07/2026 (commit `31f3dc8`)
@@ -47,10 +50,10 @@ para simplificar. NO las reintroduzcas aunque parezcan "faltantes":
   quedan **sin uso adrede** (sin migración, para no tocar la BD desplegada).
 
 ## 🚀 Pendientes reales
-1. **Ejecutar `supabase/fix-security-advisor.sql`** en el SQL Editor del
-   proyecto (si el usuario aún no lo hizo) y verificar que el Security Advisor
-   queda limpio. Verificado en Postgres 16 local: idempotente; la galería
-   sigue funcionando; `email` ilegible para anon.
+1. **Commit + push** de los cambios en `app.js`/`gallery.js`/`sw.js` (v15,
+   guardas de cámara + reintentos de subida) y del nuevo `supabase/schema.sql`
+   — el SQL ya corrió y se verificó en el proyecto real; falta publicar el
+   frontend a producción (GitHub Pages).
 2. **Ensayo general** end-to-end antes del 16/07: tomar foto → Guardar en la
    Galería → escanear QR con otro teléfono → ver en gallery.html.
 

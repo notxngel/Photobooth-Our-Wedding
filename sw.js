@@ -4,7 +4,7 @@
  * Cache-first for static assets y para las fuentes de Google; el resto pasa a la red.
  */
 
-const CACHE_NAME = 'photobooth-v14';
+const CACHE_NAME = 'photobooth-v15';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -80,7 +80,7 @@ self.addEventListener('fetch', event => {
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                 }
                 return response;
-            }).catch(() => cached);
+            }).catch(() => cached || Response.error());
 
             return cached || fetchPromise;
         })
