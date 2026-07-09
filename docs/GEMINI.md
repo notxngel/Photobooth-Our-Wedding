@@ -26,7 +26,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   URL pública de la foto (`assets/js/qr.js`, librería qrcode-generator MIT
   vendorizada; funciones `openSaveModal`/`showQrView`/`uploadPhotoToGallery`
   en `app.js`). `state.uploadedUrl` evita subir dos veces la misma foto.
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v15`;
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v16`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
 - **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
   sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).

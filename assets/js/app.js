@@ -781,6 +781,14 @@ const captureBtn = document.getElementById('capture');
 
 captureBtn?.addEventListener('click', async () => {
     if (state.isCapturing) return;
+    // Sin stream no hay nada que capturar. Si la cámara falló (overlay de
+    // error visible) avisamos; si solo está arrancando (getUserMedia aún
+    // pendiente), ignoramos el tap en silencio para no dar un error falso.
+    if (!state.stream) {
+        const errVisible = document.getElementById('camera-error')?.style.display === 'flex';
+        if (errVisible) showToast(t('booth.cam.generic'), 'error');
+        return;
+    }
     state.isCapturing  = true;
     state.capturedFrames = [];
     state.uploadedUrl  = null;

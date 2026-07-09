@@ -496,11 +496,13 @@ ul, ol { list-style: none; }
     transition: opacity var(--transition-medium);
 }
 
-/* Overlay de error de cámara */
+/* Overlay de error de cámara — z-index por debajo de las barras flotantes
+   (30) a propósito: si quedara por encima, taparía el botón "Volver" y
+   dejaría al invitado sin salida cuando la cámara falla. */
 .camera-error {
     position: absolute;
     inset: 0;
-    z-index: 40;
+    z-index: 25;
     align-items: center;
     justify-content: center;
     padding: var(--spacing-lg);
@@ -532,7 +534,9 @@ ul, ol { list-style: none; }
 }
 .camera-error .btn { margin-top: var(--spacing-sm); }
 
-/* Barra superior flotante */
+/* Barra superior flotante — la franja no captura taps (pointer-events:none):
+   solo sus botones. Así el degradado nunca bloquea lo que quede debajo
+   (p. ej. el botón Reintentar del overlay de error en pantallas bajas). */
 .booth-top-bar {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -542,8 +546,9 @@ ul, ol { list-style: none; }
     justify-content: space-between;
     align-items: center;
     background: linear-gradient(to bottom, rgba(10,8,6,0.65) 0%, transparent 100%);
-    pointer-events: auto;
+    pointer-events: none;
 }
+.booth-top-bar .btn-icon-blur { pointer-events: auto; }
 
 .current-mode-badge {
     background: rgba(15,12,9,0.45);
@@ -558,7 +563,8 @@ ul, ol { list-style: none; }
     text-transform: uppercase;
 }
 
-/* Barra inferior flotante — solo obturador */
+/* Barra inferior flotante — solo obturador. Igual que la superior: la franja
+   deja pasar los taps y solo el obturador los captura. */
 .booth-bottom-bar {
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -569,8 +575,9 @@ ul, ol { list-style: none; }
     padding: var(--spacing-lg) var(--spacing-md);
     padding-bottom: calc(var(--spacing-lg) + var(--safe-bottom));
     background: linear-gradient(to top, rgba(10,8,6,0.65) 0%, transparent 100%);
-    pointer-events: auto;
+    pointer-events: none;
 }
+.booth-bottom-bar .btn-shutter { pointer-events: auto; }
 
 /* Obturador */
 .btn-shutter {
