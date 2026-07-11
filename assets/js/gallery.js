@@ -168,12 +168,17 @@
         lbPrev.disabled = i <= 0;
         lbNext.disabled = i >= photos.length - 1;
         lightbox.classList.add('open');
+        // El fondo no scrollea (hace falta en <html>, no solo en <body>)
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
         lbClose.focus();
     }
 
     function closeLightbox() {
         lbIndex = -1;
         lightbox.classList.remove('open');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
         lbImg.src = '';
     }
 

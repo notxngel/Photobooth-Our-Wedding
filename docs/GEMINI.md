@@ -46,7 +46,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   en vivo el 10/07/2026: un toque y el JPEG se guarda en el dispositivo)
   más la foto adjunta. Guía: `docs/CORREO.md`. La clave anon sigue sin poder
   leer `email` (verificado).
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v22`;
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v23`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
 - **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
   sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).
@@ -64,7 +64,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   `prefers-reduced-motion` añadidos; eliminado CSS/JS muerto (clase
   `.selected`, estilos de paspartú `mode-pareja`/`mode-rollo` — la tira de
   celuloide es ahora el único estilo de resultado, sin clase extra —,
-  utilidades `.text-center`/`.mt-4`, `--spacing-xs`). Caché `photobooth-v22`.
+  utilidades `.text-center`/`.mt-4`, `--spacing-xs`). Caché `photobooth-v23`.
 
 ## ⛔ Decisiones deliberadas — NO revertir
 Estas piezas se **eliminaron a propósito** el 05/07/2026 (commit `31f3dc8`)

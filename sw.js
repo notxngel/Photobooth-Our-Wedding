@@ -4,7 +4,7 @@
  * Cache-first for static assets y para las fuentes de Google; el resto pasa a la red.
  */
 
-const CACHE_NAME = 'photobooth-v22';
+const CACHE_NAME = 'photobooth-v23';
 const STATIC_ASSETS = [
     './',
     './index.html',
