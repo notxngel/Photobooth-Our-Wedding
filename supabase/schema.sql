@@ -48,6 +48,16 @@ alter table public.photos enable row level security;
 
 
 -- ────────────────────────────────────────────────────────────────────────
+-- 2b. PERMISOS — rol service_role (emailer local, tools/emailer/)
+-- ────────────────────────────────────────────────────────────────────────
+-- service_role se salta las políticas RLS, pero Postgres igual exige el
+-- GRANT de tabla por separado (es un mecanismo distinto de RLS). Sin esto
+-- el emailer local falla con "permission denied for table photos" al leer
+-- lo pendiente (fetchPending) o marcar filas como enviadas (markRows).
+grant select, update on public.photos to service_role;
+
+
+-- ────────────────────────────────────────────────────────────────────────
 -- 3. RLS — public.photos (rol anon)
 -- ────────────────────────────────────────────────────────────────────────
 -- 3a. anon puede INSERTAR su foto (cualquier fila — es un kiosko sin login)

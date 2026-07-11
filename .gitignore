@@ -1,3 +1,13 @@
 # Certificados locales del servidor de desarrollo (no subir)
 key.pem
 cert.pem
+
+# Secretos locales (Gmail + service_role) — NUNCA subir
+tools/secrets.js
+
+# Dependencias del emailer local
+tools/emailer/node_modules/
+tools/emailer/package-lock.json
+
+# Logs locales del servicio launchd del emailer
+tools/emailer/logs/

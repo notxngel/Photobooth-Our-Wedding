@@ -25,6 +25,17 @@
     <!-- TOAST -->
     <div id="toast-container" aria-live="polite" aria-relevant="additions"></div>
 
+    <!-- Botón flotante a la galería: visible en todas las pantallas salvo
+         la cámara (se oculta ahí para no estorbar la captura) -->
+    <a href="gallery.html" id="gallery-fab" class="gallery-fab" aria-label="Ver la galería de fotos">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+        </svg>
+        <span data-i18n="landing.gallery">Ver la galería</span>
+    </a>
+
     <!-- ══════════════════════════════════════════════
          LANDING
     ══════════════════════════════════════════════ -->
@@ -63,7 +74,6 @@
                 <button id="btn-start" class="btn btn-outline" aria-label="Ingresar al photo booth">
                     <span data-i18n="landing.cta">Comenzar Experiencia</span>
                 </button>
-                <a href="gallery.html" class="landing-gallery-link" data-i18n="landing.gallery">Ver la galería</a>
             </div>
         </div>
     </div>
@@ -221,18 +231,12 @@
             </div>
 
             <div class="result-actions">
-                <button id="btn-download" class="btn btn-primary btn-full" aria-label="Descargar fotografía">
-                    <span data-i18n="result.download">Descargar</span>
-                </button>
-                <button id="btn-save-send" class="btn btn-outline btn-full" aria-label="Guardar en la galería y obtener código QR">
-                    <span data-i18n="result.qr">Guardar en la Galería</span>
+                <button id="btn-save-send" class="btn btn-primary btn-full" aria-label="Guardar tu foto y recibirla en tu celular">
+                    <span data-i18n="result.qr">Guardar mi Foto</span>
                 </button>
                 <button id="btn-retake-result" class="btn btn-text btn-full" aria-label="Nueva sesión">
                     <span data-i18n="result.retake">Nueva Sesión</span>
                 </button>
-                <a href="gallery.html" class="btn btn-text btn-full" aria-label="Ver la galería">
-                    <span data-i18n="result.gallery">Ver la galería</span>
-                </a>
             </div>
         </div>
     </div>
@@ -282,9 +286,15 @@
             <div id="save-view">
                 <div class="modal-header">
                     <h3 data-i18n="modal.title">Guardar Foto</h3>
-                    <p data-i18n="modal.desc">Tu foto se guardará en la galería compartida de la boda y te daremos un código QR para llevártela en tu teléfono.</p>
+                    <p data-i18n="modal.desc">Deja tu correo y te enviaremos un botón para descargar tu foto directo en tu celular. ¿Prefieres no dejarlo? Igual la guardamos y te damos un código QR.</p>
                 </div>
                 <div class="modal-body">
+                    <ol class="modal-steps">
+                        <li><span class="step-num">1</span><span data-i18n="modal.step1">Escribe tu correo abajo</span></li>
+                        <li><span class="step-num">2</span><span data-i18n="modal.step2">Toca "Guardar Foto"</span></li>
+                        <li><span class="step-num">3</span><span data-i18n="modal.step3">Ábrelo en tu celular y toca "Descargar"</span></li>
+                    </ol>
+                    <input type="email" id="email-input" class="input-line" placeholder="tu@correo.com (opcional)" data-i18n="modal.email.ph" autocomplete="email" inputmode="email">
                     <div id="save-status" class="status-msg" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
@@ -300,6 +310,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="qr-wrap"><img id="qr-img" src="" alt="Código QR de tu foto"></div>
+                    <p id="qr-email-note" class="qr-email-note" style="display:none" data-i18n="modal.qr.email">Además, te la enviaremos a tu correo. 💌</p>
                 </div>
                 <div class="modal-footer">
                     <button id="btn-qr-done" class="btn btn-outline btn-full"><span data-i18n="modal.qr.done">Listo</span></button>

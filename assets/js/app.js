@@ -12,6 +12,7 @@ const state = {
     photoDataUrl: null,
     uploadedUrl: null,        // URL pública en la galería (evita subir dos veces)
     uploadName: null,         // nombre de archivo fijo para esta foto (reintentos no duplican)
+    guestEmail: null,         // correo opcional del invitado (el emailer local se lo envía)
     capturedFrames: [],
     isCapturing: false,
     lang: 'es'
@@ -68,21 +69,24 @@ const TRANSLATIONS = {
         // Result
         'result.title':         'El Resultado',
         'result.subtitle':      'Tu momento ha sido capturado',
-        'result.download':      'Descargar',
-        'result.qr':            'Guardar en la Galería',
+        'result.qr':            'Guardar mi Foto',
         'result.retake':        'Nueva Sesión',
-        'result.saved':         'Foto guardada en tu dispositivo.',
         'result.error':         'Error al capturar la fotografía.',
-        'result.gallery':       'Ver la galería',
         // Modal
         'modal.title':          'Guardar Foto',
-        'modal.desc':           'Tu foto se guardará en la galería compartida de la boda y te daremos un código QR para llevártela en tu teléfono.',
+        'modal.desc':           'Deja tu correo y te enviaremos un botón para descargar tu foto directo en tu celular. ¿Prefieres no dejarlo? Igual la guardamos y te damos un código QR.',
+        'modal.step1':          'Escribe tu correo abajo',
+        'modal.step2':          'Toca "Guardar Foto"',
+        'modal.step3':          'Ábrelo en tu celular y toca "Descargar"',
+        'modal.email.ph':       'tu@correo.com (opcional)',
+        'modal.emailinvalid':   'Ese correo no parece válido. Corrígelo o déjalo vacío.',
         'modal.send':           'Guardar Foto',
         'modal.sending':        'Guardando...',
         'modal.success':        '¡Foto guardada en tu dispositivo!',
         'modal.uploaderror':    'No se pudo subir la foto. Revisa tu conexión e inténtalo de nuevo.',
         'modal.qr.title':       '¡Foto guardada!',
         'modal.qr.text':        'Escanea el código con la cámara de tu teléfono para abrir tu foto y guardarla.',
+        'modal.qr.email':       'Revisa tu correo en unos minutos y toca "Descargar". 💌',
         'modal.qr.done':        'Listo',
         // iOS Install
         'pwa.ios.title':        'Experiencia completa',
@@ -119,21 +123,24 @@ const TRANSLATIONS = {
         // Result
         'result.title':         'The Result',
         'result.subtitle':      'Your moment has been captured',
-        'result.download':      'Download',
-        'result.qr':            'Save to Gallery',
+        'result.qr':            'Save my Photo',
         'result.retake':        'New Session',
-        'result.saved':         'Photo saved to your device.',
         'result.error':         'Error capturing the photograph.',
-        'result.gallery':       'View the gallery',
         // Modal
         'modal.title':          'Save Photo',
-        'modal.desc':           'Your photo will be saved to the shared wedding gallery and you\'ll get a QR code to take it with you on your phone.',
+        'modal.desc':           'Leave your email and we\'ll send you a button to download your photo straight to your phone. Prefer not to? We\'ll still save it and give you a QR code.',
+        'modal.step1':          'Type your email below',
+        'modal.step2':          'Tap "Save Photo"',
+        'modal.step3':          'Open it on your phone and tap "Download"',
+        'modal.email.ph':       'you@email.com (optional)',
+        'modal.emailinvalid':   'That email doesn\'t look right. Fix it or leave it empty.',
         'modal.send':           'Save Photo',
         'modal.sending':        'Saving...',
         'modal.success':        'Photo saved to your device!',
         'modal.uploaderror':    'Could not upload the photo. Check your connection and try again.',
         'modal.qr.title':       'Photo saved!',
         'modal.qr.text':        'Scan the code with your phone\'s camera to open and save your photo.',
+        'modal.qr.email':       'Check your email in a few minutes and tap "Download". 💌',
         'modal.qr.done':        'Done',
         // iOS Install
         'pwa.ios.title':        'Full experience',
@@ -273,6 +280,9 @@ function stopParticles() {
 function navigateTo(screenId) {
     Object.values(screens).forEach(s => s?.classList.remove('active'));
     screens[screenId]?.classList.add('active');
+
+    // El botón flotante a la galería estorba durante la captura → se oculta ahí
+    document.body.classList.toggle('hide-gallery-fab', screenId === 'booth');
 
     if (screenId === 'landing') initParticles();
     else stopParticles();
@@ -696,6 +706,11 @@ function roundedRectPath(ctx, x, y, w, h, r) {
    ========================================================================== */
 async function composeFilmstrip(frames) {
     const n = frames.length;
+    // Se dibuja en unidades lógicas pero se renderiza a SCALE× — a 1× la tira
+    // salía de solo 692 px de ancho y las fotos llegaban borrosas por correo.
+    // 2× (slots de 1200×900) aprovecha la resolución real de la cámara frontal
+    // (~1440×1080 tras el recorte 4:3) sin inflar el archivo con upscaling.
+    const SCALE = 2;
     const PW = 600, PH = 450;       // slots 4:3 — coincide con cámaras frontales
     const RAIL = 46;                // rieles laterales con perforaciones
     const GAP = 16;
@@ -704,9 +719,11 @@ async function composeFilmstrip(frames) {
     const ch = TOP + PH * n + GAP * (n - 1) + FOOTER;
 
     const c = document.createElement('canvas');
-    c.width  = cw;
-    c.height = ch;
+    c.width  = cw * SCALE;
+    c.height = ch * SCALE;
     const ctx = c.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+    ctx.imageSmoothingQuality = 'high';
 
     // Fondo de celuloide con leve gradiente lateral
     const bg = ctx.createLinearGradient(0, 0, cw, 0);
@@ -793,6 +810,7 @@ captureBtn?.addEventListener('click', async () => {
     state.capturedFrames = [];
     state.uploadedUrl  = null;
     state.uploadName   = null;
+    state.guestEmail   = null;
     captureBtn.disabled = true;
     if (backBoothBtn) backBoothBtn.disabled = true;
 
@@ -879,11 +897,6 @@ async function savePhoto() {
     return 'downloaded';
 }
 
-document.getElementById('btn-download')?.addEventListener('click', async () => {
-    const result = await savePhoto();
-    if (result === 'downloaded') showToast(t('result.saved'), 'success');
-});
-
 // Recuerda el elemento que abrió el modal para devolverle el foco al cerrar
 let lastFocusedBeforeModal = null;
 
@@ -933,6 +946,9 @@ function showQrView(url) {
         qr.make();
         img.src = qr.createDataURL(8, 16);
     }
+    // Si el invitado dejó su correo, se lo confirmamos bajo el QR
+    const note = document.getElementById('qr-email-note');
+    if (note) note.style.display = state.guestEmail ? '' : 'none';
     const save = document.getElementById('save-view');
     const view = document.getElementById('qr-view');
     if (save) save.style.display = 'none';
@@ -951,8 +967,19 @@ document.getElementById('btn-retake-result')?.addEventListener('click', () => {
     state.photoDataUrl   = null;
     state.uploadedUrl    = null;
     state.uploadName     = null;
+    state.guestEmail     = null;
     state.capturedFrames = [];
+    const emailEl = document.getElementById('email-input');
+    if (emailEl) emailEl.value = '';
     navigateTo('menu');
+});
+
+// Enter en el campo de correo = pulsar "Guardar Foto"
+document.getElementById('email-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btn-save-gallery')?.click();
+    }
 });
 
 /* ==========================================================================
@@ -1056,9 +1083,9 @@ async function uploadPhotoToGallery(blob) {
         body: JSON.stringify(payload)
     }, 20000, 'BD');
 
-    let ins = await insert({ image_path: name, thumb_path: thumbPath });
-    // Compatibilidad: si la BD aún no tiene la columna thumb_path (falta correr
-    // upgrade-fase2.sql), reintenta sin ella para no perder la foto.
+    let ins = await insert({ image_path: name, thumb_path: thumbPath, email: state.guestEmail });
+    // Compatibilidad: si la BD no tuviera alguna columna opcional, reintenta
+    // con lo mínimo para no perder la foto.
     if (!ins.ok && ins.status === 400) {
         ins = await insert({ image_path: name });
     }
@@ -1072,11 +1099,26 @@ async function uploadPhotoToGallery(blob) {
    ========================================================================== */
 document.getElementById('btn-close-modal')?.addEventListener('click', closeSaveModal);
 
+// Validación laxa: solo frena typos evidentes; el correo es opcional
+function looksLikeEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
+}
+
 document.getElementById('btn-save-gallery')?.addEventListener('click', async () => {
     const status  = document.getElementById('save-status');
     const btnSave = document.getElementById('btn-save-gallery');
+    const emailEl = document.getElementById('email-input');
 
     if (!state.photoDataUrl) { showToast(t('result.error'), 'error'); return; }
+
+    // Correo opcional: vacío está bien; con contenido, debe parecer un correo
+    const typed = (emailEl?.value || '').trim();
+    if (typed && !looksLikeEmail(typed)) {
+        showToast(t('modal.emailinvalid'), 'warning');
+        emailEl?.focus();
+        return;
+    }
+    state.guestEmail = typed || null;
 
     // Si el backend no está configurado, modo local: guarda en el dispositivo
     if (!backendConfig()) {
@@ -1093,6 +1135,7 @@ document.getElementById('btn-save-gallery')?.addEventListener('click', async () 
         const blob = dataURLtoBlob(state.photoDataUrl);
         state.uploadedUrl = await uploadPhotoToGallery(blob);
         if (status) status.textContent = '';
+        if (emailEl) emailEl.value = '';   // el siguiente invitado no ve este correo
         showQrView(state.uploadedUrl);
     } catch (err) {
         console.error('Upload error:', err);

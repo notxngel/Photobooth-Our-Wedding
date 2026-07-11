@@ -1,6 +1,6 @@
 # Photobooth - Our Wedding (Angel & Clara)
 
-> **Última actualización de esta memoria: 08/07/2026** (por Claude Code).
+> **Última actualización de esta memoria: 11/07/2026** (por Claude Code).
 > Cualquier agente que haga cambios significativos debe actualizar este
 > archivo (y el `CLAUDE.md` de la raíz) antes de terminar su sesión.
 
@@ -18,7 +18,10 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
 ## 🏗️ Arquitectura vigente (desde 05/07/2026)
 - **Frontend estático puro** (sin build): `index.html` + `assets/js/app.js`
   (cámara, filtros por matrices de color, composición Canvas, i18n ES/EN,
-  subida, QR) y `gallery.html` + `assets/js/gallery.js`.
+  subida, QR) y `gallery.html` + `assets/js/gallery.js`. La tira se compone
+  en `composeFilmstrip` con layout en unidades lógicas renderizado a **2×**
+  (1384 px de ancho; a 1× salía de 692 px y las fotos llegaban borrosas —
+  corregido el 11/07/2026).
 - **Backend mínimo**: Supabase solo con la clave **pública** (`anon`), en
   `assets/js/config.js`. La app únicamente sube (Storage + INSERT en `photos`).
   No hay Edge Functions, no hay claves secretas en ningún sitio.
@@ -26,7 +29,17 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   URL pública de la foto (`assets/js/qr.js`, librería qrcode-generator MIT
   vendorizada; funciones `openSaveModal`/`showQrView`/`uploadPhotoToGallery`
   en `app.js`). `state.uploadedUrl` evita subir dos veces la misma foto.
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v16`;
+  **Además (09/07/2026, decisión de Angel & Clara: el QR es difícil para
+  invitados mayores)**: el modal pide un **correo opcional** que viaja en la
+  columna `email` del INSERT; el **emailer local restaurado**
+  (`tools/emailer/send-emails.js`, Nodemailer + Gmail app password + clave
+  secreta en `tools/secrets.js` gitignored, modo `--watch` durante la boda)
+  se lo envía con **botón de descarga directa** por foto (URL pública de
+  Storage con `?download=` → `Content-Disposition: attachment`, verificado
+  en vivo el 10/07/2026: un toque y el JPEG se guarda en el dispositivo)
+  más la foto adjunta. Guía: `docs/CORREO.md`. La clave anon sigue sin poder
+  leer `email` (verificado).
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v20`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
 - **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
   sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).
@@ -40,22 +53,24 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
 ## ⛔ Decisiones deliberadas — NO revertir
 Estas piezas se **eliminaron a propósito** el 05/07/2026 (commit `31f3dc8`)
 para simplificar. NO las reintroduzcas aunque parezcan "faltantes":
-- ❌ **Envío por correo** (`tools/emailer/`, Nodemailer + Gmail): reemplazado
-  por el QR. La app ya **no pide ni guarda correos** de invitados.
 - ❌ **Panel admin** (`admin.html`, Edge Function `admin-photos`, PIN,
-  `tools/admin-local.html`, `tools/secrets.js`): el borrado de fotos se hace
-  en el dashboard de Supabase (Table Editor → `photos` → Delete row; opcional
-  Storage para liberar espacio). Documentado en README.
-- Las columnas `email`, `email_sent_at`, `email_error` de la tabla `photos`
-  quedan **sin uso adrede** (sin migración, para no tocar la BD desplegada).
+  `tools/admin-local.html`): el borrado de fotos se hace en el dashboard de
+  Supabase (Table Editor → `photos` → Delete row; opcional Storage para
+  liberar espacio). Documentado en README.
+- (El **envío por correo** también se eliminó ese día, pero se **restauró el
+  09/07/2026** a pedido de Angel & Clara — ver arriba. Las columnas `email`,
+  `email_sent_at`, `email_error` vuelven a estar en uso.)
 
 ## 🚀 Pendientes reales
-1. **Commit + push** de los cambios en `app.js`/`gallery.js`/`sw.js` (v15,
-   guardas de cámara + reintentos de subida) y del nuevo `supabase/schema.sql`
-   — el SQL ya corrió y se verificó en el proyecto real; falta publicar el
-   frontend a producción (GitHub Pages).
-2. **Ensayo general** end-to-end antes del 16/07: tomar foto → Guardar en la
-   Galería → escanear QR con otro teléfono → ver en gallery.html.
+1. **Ensayo general** end-to-end antes del 16/07 en un dispositivo real con
+   cámara (iPad): tomar foto → Guardar mi Foto → correo con botón de
+   descarga y/o QR → ver en gallery.html. No se pudo probar la cámara real
+   en sesión de agente (sin webcam en el entorno de automatización).
+2. El día de la boda: dejar la Mac enchufada y sin dormirse — el emailer ya
+   corre solo vía `launchd` (`~/Library/LaunchAgents/com.photobooth.emailer.plist`,
+   ver `docs/CORREO.md`), no requiere abrir terminal.
+3. Después de la boda: revocar la clave de aplicación de Gmail en
+   myaccount.google.com/apppasswords.
 
 ## 🔧 Recordatorios operativos
 - Probar en local con cámara: `node tools/dev-server.js` (HTTPS autofirmado).
