@@ -375,8 +375,9 @@ async function startCamera() {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            // Pedimos la mayor resolución disponible — el recorte usa la real
-            video: { facingMode: 'user', width: { ideal: 2560 }, height: { ideal: 1440 } },
+            // Ideal 4K: el navegador entrega lo máximo que la cámara soporte
+            // (nunca falla por pedir de más) — el recorte usa la resolución real
+            video: { facingMode: 'user', width: { ideal: 3840 }, height: { ideal: 2160 } },
             audio: false
         });
         if (requestId !== cameraRequestId) {
@@ -704,11 +705,6 @@ function roundedRectPath(ctx, x, y, w, h, r) {
    ========================================================================== */
 async function composeFilmstrip(frames) {
     const n = frames.length;
-    // Se dibuja en unidades lógicas pero se renderiza a SCALE× — a 1× la tira
-    // salía de solo 692 px de ancho y las fotos llegaban borrosas por correo.
-    // 2× (slots de 1200×900) aprovecha la resolución real de la cámara frontal
-    // (~1440×1080 tras el recorte 4:3) sin inflar el archivo con upscaling.
-    const SCALE = 2;
     const PW = 600, PH = 450;       // slots 4:3 — coincide con cámaras frontales
     const RAIL = 46;                // rieles laterales con perforaciones
     const GAP = 16;
@@ -716,9 +712,20 @@ async function composeFilmstrip(frames) {
     const cw = PW + RAIL * 2;
     const ch = TOP + PH * n + GAP * (n - 1) + FOOTER;
 
+    // Se dibuja en unidades lógicas y se renderiza a SCALE×. La escala se
+    // calcula con la resolución real que entregó la cámara (con 2× fijo, una
+    // cámara de 1440+ px perdía píxeles al encoger cada foto a su slot).
+    // Mínimo 2× (tira legible incluso con webcams 720p), máximo 4×, y un tope
+    // de área total (~14 MP) para no exceder los límites de canvas de iOS.
+    const imgs = [];
+    for (const f of frames) imgs.push(await loadImage(f));
+    const maxFrameW = Math.max(0, ...imgs.map(im => im.width || 0));
+    let SCALE = Math.min(4, Math.max(2, maxFrameW / PW));
+    SCALE = Math.min(SCALE, Math.sqrt(14e6 / (cw * ch)));
+
     const c = document.createElement('canvas');
-    c.width  = cw * SCALE;
-    c.height = ch * SCALE;
+    c.width  = Math.round(cw * SCALE);
+    c.height = Math.round(ch * SCALE);
     const ctx = c.getContext('2d');
     ctx.scale(SCALE, SCALE);
     ctx.imageSmoothingQuality = 'high';
@@ -748,8 +755,8 @@ async function composeFilmstrip(frames) {
     ctx.fillText('Matamoros Wedding', cw / 2, TOP / 2 + 6);
 
     // Fotos con crop centrado (sin estirar) y borde fino
-    for (let i = 0; i < frames.length; i++) {
-        const img = await loadImage(frames[i]);
+    for (let i = 0; i < imgs.length; i++) {
+        const img = imgs[i];
         const y = TOP + i * (PH + GAP);
         drawImageCover(ctx, img, RAIL, y, PW, PH);
         ctx.strokeStyle = 'rgba(245, 230, 211, 0.16)';

@@ -23,9 +23,12 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
 - **Frontend estático puro** (sin build): `index.html` + `assets/js/app.js`
   (cámara, filtros por matrices de color, composición Canvas, i18n ES/EN,
   subida, QR) y `gallery.html` + `assets/js/gallery.js`. La tira se compone
-  en `composeFilmstrip` con layout en unidades lógicas renderizado a **2×**
-  (1384 px de ancho; a 1× salía de 692 px y las fotos llegaban borrosas —
-  corregido el 11/07/2026).
+  en `composeFilmstrip` con layout en unidades lógicas y **escala dinámica**
+  según la resolución real de la cámara (mín 2× = 1384 px de ancho, máx 4×,
+  tope de área ~14 MP por los límites de canvas de iOS; la cámara se pide a
+  ideal 4K). A 1× salía de 692 px y las fotos llegaban borrosas por correo
+  (corregido el 11/07/2026); el 2× fijo desperdiciaba cámaras de 1440+ px
+  (corregido también el 11/07/2026).
 - **Backend mínimo**: Supabase solo con la clave **pública** (`anon`), en
   `assets/js/config.js`. La app únicamente sube (Storage + INSERT en `photos`).
   No hay Edge Functions, no hay claves secretas en ningún sitio.
@@ -43,7 +46,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   en vivo el 10/07/2026: un toque y el JPEG se guarda en el dispositivo)
   más la foto adjunta. Guía: `docs/CORREO.md`. La clave anon sigue sin poder
   leer `email` (verificado).
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v21`;
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v22`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
 - **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
   sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).
@@ -61,7 +64,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   `prefers-reduced-motion` añadidos; eliminado CSS/JS muerto (clase
   `.selected`, estilos de paspartú `mode-pareja`/`mode-rollo` — la tira de
   celuloide es ahora el único estilo de resultado, sin clase extra —,
-  utilidades `.text-center`/`.mt-4`, `--spacing-xs`). Caché `photobooth-v21`.
+  utilidades `.text-center`/`.mt-4`, `--spacing-xs`). Caché `photobooth-v22`.
 
 ## ⛔ Decisiones deliberadas — NO revertir
 Estas piezas se **eliminaron a propósito** el 05/07/2026 (commit `31f3dc8`)
