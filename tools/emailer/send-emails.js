@@ -114,7 +114,7 @@ function emailHtml(rows) {
         </p>`).join('');
     return `
     <div style="background:#0F0C09;color:#F5E6D3;font-family:Georgia,serif;padding:36px 24px;text-align:center">
-        <p style="color:#C9A96E;font-size:26px;margin:0 0 4px">Matamoro's Wedding</p>
+        <p style="color:#C9A96E;font-size:26px;margin:0 0 4px">Matamoros Wedding</p>
         <p style="font-style:italic;font-size:18px;margin:0 0 24px;opacity:.8">Angel &amp; Clara · 16 · 07 · 2026</p>
         <p style="font-size:15px;line-height:1.7;margin:0 0 20px">
             ¡Gracias por acompañarnos! 💛<br>
@@ -186,7 +186,7 @@ async function processPending() {
 }
 
 async function main() {
-    console.log('📮 Emailer del photobooth — Matamoro\'s Wedding');
+    console.log('📮 Emailer del photobooth — Matamoros Wedding');
     console.log(`   Remitente: ${SEC.GMAIL_USER}`);
 
     try {

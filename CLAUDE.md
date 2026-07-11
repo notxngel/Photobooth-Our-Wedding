@@ -4,6 +4,7 @@ PWA de photo booth para una boda. Frontend estático puro (sin build, sin
 frameworks) publicado en GitHub Pages desde `main`. Backend mínimo: Supabase
 (proyecto `bxlfjobuzoxcnjrwaeee`) usando SOLO la clave pública `anon`.
 
+> Marca oficial: **"Matamoros Wedding"** (sin apóstrofo, desde 11/07/2026).
 > Memoria detallada del proyecto y su historia: `docs/GEMINI.md`.
 > Tras cambios significativos, actualiza ambos archivos.
 
@@ -33,7 +34,7 @@ frameworks) publicado en GitHub Pages desde `main`. Backend mínimo: Supabase
 - `index.html`, `gallery.html`, `manifest.webmanifest` y `sw.js` deben
   permanecer en la raíz (alcance del service worker).
 - Tras tocar `app.js`/`styles.css`/`config.js`/`index.html`: **subir
-  `CACHE_NAME`** en `sw.js` (actualmente `photobooth-v20`).
+  `CACHE_NAME`** en `sw.js` (actualmente `photobooth-v21`).
 - SQL: fuente única `supabase/schema.sql` (bucket + tabla `photos` + vista
   `gallery_photos` + todas las políticas RLS, con nombres `pb_*`). Es
   idempotente — se puede volver a pegar y correr entero en el SQL Editor del

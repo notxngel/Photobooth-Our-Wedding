@@ -1,4 +1,4 @@
-# Matamoro's Wedding — Photo Booth 📸
+# Matamoros Wedding — Photo Booth 📸
 
 PWA (app web) de photo booth para la boda de **Angel & Clara** (16/07/2026).
 Los invitados toman fotos con filtros, se componen en una tira de película, se

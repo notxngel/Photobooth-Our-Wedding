@@ -1,10 +1,10 @@
 /**
- * sw.js — Service Worker for Matamoro's Wedding Photo Booth
+ * sw.js — Service Worker for Matamoros Wedding Photo Booth
  * Enables PWA install (standalone mode = no browser chrome).
  * Cache-first for static assets y para las fuentes de Google; el resto pasa a la red.
  */
 
-const CACHE_NAME = 'photobooth-v20';
+const CACHE_NAME = 'photobooth-v21';
 const STATIC_ASSETS = [
     './',
     './index.html',

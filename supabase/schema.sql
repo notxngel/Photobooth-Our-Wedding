@@ -1,5 +1,5 @@
 -- ============================================================================
--- supabase/schema.sql — Photo Booth "Matamoro's Wedding" — esquema completo
+-- supabase/schema.sql — Photo Booth "Matamoros Wedding" — esquema completo
 -- ============================================================================
 -- Fuente única de verdad. Reemplaza a los scripts sueltos anteriores
 -- (setup.sql, upgrade-fase2.sql, fix-security-advisor.sql,

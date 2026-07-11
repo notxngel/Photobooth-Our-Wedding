@@ -95,7 +95,7 @@ nuevo — el servicio carga las claves solo una vez al arrancar.
 ### Qué verás
 
 ```
-📮 Emailer del photobooth — Matamoro's Wedding
+📮 Emailer del photobooth — Matamoros Wedding
    Remitente: angelmm263@gmail.com
    Conexión con Gmail: ✓
 

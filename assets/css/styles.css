@@ -20,7 +20,6 @@
     --transition-medium: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast:   0.18s ease;
 
-    --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 2rem;
@@ -72,6 +71,14 @@ button {
 }
 
 button:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+/* Foco visible para navegación con teclado (el reset quita el outline) */
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
 h1,h2,h3,h4,h5,h6 { font-weight: normal; }
 a { text-decoration: none; color: inherit; }
 ul, ol { list-style: none; }
@@ -112,9 +119,13 @@ ul, ol { list-style: none; }
     overflow-y: auto;
 }
 
-/* Utilidades */
-.text-center { text-align: center; }
-.mt-4 { margin-top: var(--spacing-lg); }
+/* En Menú y Resultado el botón principal queda al fondo de la pantalla:
+   se reserva espacio para que el botón flotante de la galería (abajo a la
+   derecha) nunca se encime sobre él en móviles. */
+#menu .screen-container,
+#result .screen-container {
+    padding-bottom: calc(var(--spacing-lg) + var(--safe-bottom) + 3.4rem);
+}
 
 /* ==========================================================================
    BOTONES GENERALES
@@ -744,58 +755,23 @@ ul, ol { list-style: none; }
     font-style: italic;
 }
 
+/* La tira de celuloide trae su propio fondo — sin paspartú */
 .result-preview-wrapper {
-    background: #F5E6D3;
-    padding: 14px;
-    padding-bottom: 42px;
-    border-radius: 2px;
-    box-shadow: 0 20px 48px rgba(0,0,0,0.45);
     margin: 0 auto var(--spacing-xl) auto;
-    width: 100%;
-    max-width: 420px;
-    transform: rotate(0.8deg);
-    transition: transform var(--transition-medium);
+    align-self: center;
+    max-width: 100%;
 }
-.result-preview-wrapper:hover { transform: rotate(0deg) scale(1.01); }
 
 #result-image {
-    width: 100%;
-    height: auto;
-    max-height: 52vh;
-    object-fit: contain;
-    display: block;
-    border: 1px solid rgba(0,0,0,0.08);
-}
-
-/* ── Rollo: la tira de celuloide ya trae su propio fondo — sin paspartú ── */
-.result-preview-wrapper.mode-rollo {
-    background: transparent;
-    padding: 0;
-    box-shadow: none;
-    transform: none;
-    width: auto;
-    max-width: none;
-    align-self: center;
-}
-.result-preview-wrapper.mode-rollo:hover { transform: none; }
-.result-preview-wrapper.mode-rollo #result-image {
     width: auto;
     max-width: 100%;
+    height: auto;
     max-height: 58vh;
+    object-fit: contain;
+    display: block;
     margin: 0 auto;
-    border: none;
     border-radius: 3px;
     box-shadow: 0 18px 44px rgba(0,0,0,0.6);
-}
-
-/* ── Díptico: el canvas ya trae paspartú crema — marco exterior mínimo ── */
-.result-preview-wrapper.mode-pareja {
-    max-width: 540px;
-    padding: 8px;
-    transform: rotate(0.4deg);
-}
-.result-preview-wrapper.mode-pareja #result-image {
-    max-height: none;
 }
 
 /* Acciones del resultado */
@@ -995,6 +971,14 @@ ul, ol { list-style: none; }
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Respeta la preferencia del sistema de reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 /* ==========================================================================
    ESTADOS ACTIVOS — retroalimentación táctil
    ========================================================================== */
@@ -1032,17 +1016,8 @@ ul, ol { list-style: none; }
     .action-footer  { margin-top: var(--spacing-lg); }
 
     /* ── Resultado ── */
-    #result-image {
-        max-height: 42vh;
-    }
-    .result-preview-wrapper {
-        max-width: 100%;
-        margin-bottom: var(--spacing-lg);
-        padding: 10px;
-        padding-bottom: 30px;
-    }
-    .result-preview-wrapper.mode-rollo #result-image { max-height: 52vh; }
-    .result-preview-wrapper.mode-pareja { padding: 6px; }
+    #result-image { max-height: 52vh; }
+    .result-preview-wrapper { margin-bottom: var(--spacing-lg); }
     .result-header { margin-bottom: var(--spacing-md); }
     .result-actions { gap: var(--spacing-sm); }
 
@@ -1061,7 +1036,6 @@ ul, ol { list-style: none; }
     .mode-card h3    { font-size: 1.3rem; }
     .mode-card-badge { font-size: 1.5rem; }
     .btn             { font-size: 0.92rem; padding: 0.85rem 1.4rem; }
-    #result-image    { max-height: 38vh; }
 }
 
 /* ==========================================================================
@@ -1075,7 +1049,7 @@ ul, ol { list-style: none; }
     .landing-subtitle-wrapper { margin-bottom: var(--spacing-md); }
     .screen-header  { margin-bottom: var(--spacing-md); }
     .action-footer  { margin-top:    var(--spacing-md); }
-    #result-image   { max-height: 32vh; }
+    #result-image   { max-height: 48vh; }
     .result-preview-wrapper { margin-bottom: var(--spacing-md); }
 }
 

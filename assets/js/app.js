@@ -1,5 +1,5 @@
 /**
- * app.js — Matamoro's Wedding Photo Booth
+ * app.js — Matamoros Wedding Photo Booth
  */
 
 /* ==========================================================================
@@ -334,10 +334,8 @@ document.querySelectorAll('.mode-card').forEach(card => {
     function select() {
         document.querySelectorAll('.mode-card').forEach(c => {
             c.setAttribute('aria-checked', 'false');
-            c.classList.remove('selected');
         });
         card.setAttribute('aria-checked', 'true');
-        card.classList.add('selected');
         state.mode = card.dataset.mode;
     }
     card.addEventListener('click', select);
@@ -747,7 +745,7 @@ async function composeFilmstrip(frames) {
     ctx.fillStyle = 'rgba(201, 169, 110, 0.55)';
     ctx.font = '400 17px "Cormorant Garamond", Georgia, serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Matamoro\'s Wedding', cw / 2, TOP / 2 + 6);
+    ctx.fillText('Matamoros Wedding', cw / 2, TOP / 2 + 6);
 
     // Fotos con crop centrado (sin estirar) y borde fino
     for (let i = 0; i < frames.length; i++) {
@@ -778,7 +776,7 @@ async function composeFilmstrip(frames) {
     // Título principal del evento
     ctx.fillStyle = '#C9A96E';
     ctx.font = '400 34px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText('Matamoro\'s Wedding', cw / 2, oy + 46);
+    ctx.fillText('Matamoros Wedding', cw / 2, oy + 46);
     // Subtítulo — nombres de los novios
     ctx.fillStyle = 'rgba(245, 230, 211, 0.7)';
     ctx.font = 'italic 400 21px "Cormorant Garamond", Georgia, serif';
@@ -844,9 +842,6 @@ captureBtn?.addEventListener('click', async () => {
     if (!screens.booth?.classList.contains('active')) return;
 
     if (state.photoDataUrl) {
-        // Todos los modos se muestran como tira de película (sin paspartú)
-        const wrapper = document.querySelector('.result-preview-wrapper');
-        if (wrapper) wrapper.classList.add('mode-rollo');
         document.getElementById('result-image').src = state.photoDataUrl;
         navigateTo('result');
     } else {

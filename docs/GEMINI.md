@@ -15,6 +15,10 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
 - Galería: https://notxngel.github.io/Photobooth-Our-Wedding/gallery.html
 - Proyecto Supabase: `bxlfjobuzoxcnjrwaeee`
 
+- **Marca oficial (11/07/2026)**: el evento se llama **"Matamoros Wedding"**
+  (sin apóstrofo). Renombrado en toda la app (títulos, manifest, tira de
+  Canvas, correo del emailer, docs). No reintroducir "Matamoro's".
+
 ## 🏗️ Arquitectura vigente (desde 05/07/2026)
 - **Frontend estático puro** (sin build): `index.html` + `assets/js/app.js`
   (cámara, filtros por matrices de color, composición Canvas, i18n ES/EN,
@@ -39,7 +43,7 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   en vivo el 10/07/2026: un toque y el JPEG se guarda en el dispositivo)
   más la foto adjunta. Guía: `docs/CORREO.md`. La clave anon sigue sin poder
   leer `email` (verificado).
-- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v20`;
+- **PWA**: `sw.js` precachea el shell (versión de caché `photobooth-v21`;
   **subir el número** tras tocar assets para invalidar caché de usuarios).
 - **SQL**: fuente única `supabase/schema.sql` (reemplaza a los 4 scripts
   sueltos que existían antes — se consolidaron y se borraron el 08/07/2026).
@@ -49,6 +53,15 @@ y el invitado se la lleva a su teléfono **escaneando un código QR**.
   `pb_storage_update`, necesaria para que los reintentos de subida
   (`x-upsert: true` en `uploadPhotoToGallery`) no fallen con 403. Verificado
   contra el proyecto en vivo el 07-08/07/2026 con `curl` directo a la API.
+
+- **Pulido final de diseño (11/07/2026)**: se reservó espacio inferior en
+  Menú/Resultado para que el botón flotante de la galería no se encime sobre
+  los botones principales en móvil; en `gallery.html` el encabezado baja en
+  pantallas angostas para no chocar con "Volver"; `:focus-visible` y
+  `prefers-reduced-motion` añadidos; eliminado CSS/JS muerto (clase
+  `.selected`, estilos de paspartú `mode-pareja`/`mode-rollo` — la tira de
+  celuloide es ahora el único estilo de resultado, sin clase extra —,
+  utilidades `.text-center`/`.mt-4`, `--spacing-xs`). Caché `photobooth-v21`.
 
 ## ⛔ Decisiones deliberadas — NO revertir
 Estas piezas se **eliminaron a propósito** el 05/07/2026 (commit `31f3dc8`)

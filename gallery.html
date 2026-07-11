@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Galería — Matamoro's Wedding</title>
+    <title>Galería — Matamoros Wedding</title>
     <meta name="theme-color" content="#0F0C09">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,6 +25,9 @@
             padding: 2rem 1rem 4rem;
         }
         header { text-align: center; margin-bottom: 1.6rem; }
+        /* En pantallas angostas el botón fijo "Volver" queda a la altura del
+           título: se baja el encabezado para que no se encimen. */
+        @media (max-width: 540px) { header { padding-top: 2.4rem; } }
         .back {
             position: fixed; top: 1rem; left: 1rem; z-index: 10;
             color: var(--text); text-decoration: none; opacity: 0.75;
@@ -125,7 +128,7 @@
     <a href="index.html" class="back" data-g-i18n="back">‹ Volver</a>
 
     <header>
-        <h1>Matamoro's Wedding</h1>
+        <h1>Matamoros Wedding</h1>
         <p class="couple">Angel &amp; Clara</p>
         <p class="subtitle" data-g-i18n="subtitle">Galería de la boda · 07 · 16 · 2026</p>
     </header>
