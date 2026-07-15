@@ -75,6 +75,11 @@ Ya está instalado como servicio de `launchd` (`~/Library/LaunchAgents/com.photo
 arranca solo al iniciar sesión en la Mac, y si el proceso muere se reinicia
 automáticamente. No hace falta dejar una ventana de Terminal abierta.
 
+El servicio corre envuelto en `caffeinate -i -s`: mientras esté activo y la
+Mac **enchufada a la corriente**, el sistema no se duerme (la config de
+energía de esta Mac duerme al minuto y cortaba los envíos). Ojo: esto **no**
+aplica si cierras la tapa — el día del evento, tapa abierta y cargador puesto.
+
 ```bash
 # Ver si está corriendo
 launchctl list | grep photobooth
