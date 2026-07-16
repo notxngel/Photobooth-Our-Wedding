@@ -78,6 +78,9 @@ para simplificar. NO las reintroduzcas aunque parezcan "faltantes":
   `email_sent_at`, `email_error` vuelven a estar en uso.)
 
 ## 🚀 Pendientes reales
+0. **⚠️ Modo kiosco del iPad**: iniciar sesión de **Acceso Guiado** cada vez
+   que se monte el booth (activarlo en Ajustes no basta) — guía completa y
+   checklist del día en `docs/KIOSCO.md`.
 1. **Ensayo general** end-to-end antes del 16/07 en un dispositivo real con
    cámara (iPad): tomar foto → Guardar mi Foto → correo con botón de
    descarga y/o QR → ver en gallery.html. No se pudo probar la cámara real
